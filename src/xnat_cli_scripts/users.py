@@ -21,16 +21,6 @@ import xnat
 import xnat.core
 import xnat.mixin
 
-def execute_project_list(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-
-    #print(format_project_header_rows())
-    user_groups = connection.get_json(f"/xapi/users/smm/groups")
-
-    for x_group in user_groups:
-        connection.put(f"/xapi/users/test_user/groups/{x_group}")
-        xyz = ""
-        abc = ""
-
 def execute_list_user_projects(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     target_user = args.target_user
     user_groups = connection.get_json(f"/xapi/users/{target_user}/groups")
@@ -98,7 +88,32 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
     elif (args.groups):
         execute_list_user_groups(connection, args)
     else:
-        print("Request to list requires --projects or --roles")
+        print("Request to list requires --groups, --projects or --roles")
+
+
+def remove_user_group(user: str, group: str, sleep_time: float, verbose: bool) -> None:
+    print(f"Remove user from group {user} {group} {sleep_time} {verbose}")
+
+def execute_remove_user_groups(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    if (args.csv_file is None):
+        target_user = args.target_user
+        user_groups = connection.get_json(f"/xapi/users/{target_user}/groups")
+        for x_group in user_groups:
+            remove_user_group(target_user, x_group, args.sleep, args.verbose)
+
+    else:
+        with open(args.csv_file, newline='') as csvfile:
+            rdr = csv.reader(csvfile, delimiter='\t')
+            for row in rdr:
+                user = row[0]
+                group = row[1]
+                remove_user_group(user, group, args.sleep, args.verbose)
+
+def execute_remove_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    if (args.groups):
+        execute_remove_user_groups(connection, args)
+    else:
+        print("Request to remove groups requires --groups")
 
 def execute_user_group_clone(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     source_user = args.clone_groups
@@ -109,7 +124,6 @@ def execute_user_group_clone(connection: xnat.session.XNATSession, args: argpars
     float_sleep = 0.0
     if (args.sleep is not None):
         float_sleep = float(args.sleep)
-
 
     for x_group in user_groups:
         if args.verbose:
@@ -132,13 +146,13 @@ if __name__ == "__main__":
     ## These are operations
     parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",             action='store_true')
     parser.add_argument('-C', '--clone_groups',    dest='clone_groups',    help='Clone the user group from this user')
-    parser.add_argument('-R', '--remove',          dest='remove',          help='Remove role(s) this user')
+    parser.add_argument('-R', '--remove',          dest='remove',          help='Remove role(s) this user',      action='store_true')
 
     # These are objects of the operations; they regulate the action
     parser.add_argument('-p', '--projects',        dest='projects',        help='Verb object: Projects',         action='store_true')
     parser.add_argument('-g', '--groups',          dest='groups',          help='Verb object: Groups',           action='store_true')
     parser.add_argument('-r', '--roles',           dest='roles',           help='Verb object: Roles',            action='store_true')
-    parser.add_argument('-c', '--csv_file',        dest='csv_file',        help="CSV file with list of objects (projects, roles, ...) for operations")
+    parser.add_argument('-c', '--csv',             dest='csv_file',        help="CSV file with list of objects (projects, roles, ...) for operations")
     parser.add_argument('-t', '--target_user',     dest='target_user',     help='Target user: Operations performed on the target')
 
     ## Furhter modifiers
@@ -158,18 +172,18 @@ if __name__ == "__main__":
 
     password = None
     password="admin"
-    print(f"args.extension_types: {args.extension_types}")
     args.extension_types = "True" if args.extension_types is None else args.extension_types
     connection = xnat.connect(args.url, user=args.user, password=password, extension_types=False)
 
     if args.list:
         execute_list_master(connection, args)
+    elif args.remove:
+        execute_remove_master(connection, args)
     elif args.clone_groups:
         execute_user_group_clone(connection, args)
-#    elif args.rename_sessions:
-#        execute_session_rename(connection, args)
+
     else:
-        print("Command not entered that we recognize")
+        print("One of the recognized commands was not entered.")
 
     connection.disconnect()
 
