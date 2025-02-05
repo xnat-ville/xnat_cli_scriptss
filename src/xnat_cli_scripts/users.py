@@ -21,15 +21,6 @@ import xnat
 import xnat.core
 import xnat.mixin
 
-def format_project_header_rows() -> str:
-    return "ID, Name, Insert Date, Subject Count, Experiment Count"
-def format_project_data(p) -> str:
-    formatted_string = f"{p.id}, {p.name}, {p.insert_date}, {len(p.subjects)}, {len(p.experiments)}"
-    return formatted_string
-
-def format_project_id_name(p) -> str:
-    return f"{p.id}, {p.name}"
-
 def execute_project_list(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
 
     #print(format_project_header_rows())
@@ -39,6 +30,75 @@ def execute_project_list(connection: xnat.session.XNATSession, args: argparse.Na
         connection.put(f"/xapi/users/test_user/groups/{x_group}")
         xyz = ""
         abc = ""
+
+def execute_list_user_projects(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    target_user = args.target_user
+    user_groups = connection.get_json(f"/xapi/users/{target_user}/groups")
+    index = 1
+    group_length = len(user_groups)
+    float_sleep = 0.0
+    if (args.sleep is not None):
+        float_sleep = float(args.sleep)
+
+    tab = "\t"
+    for x_group in user_groups:
+        role_index = x_group.rindex("_")
+        project_only = x_group[:role_index]
+        if args.verbose:
+            print(f"{index}{tab}{group_length}{tab}{target_user}{tab}{project_only}")
+            index += 1
+        else:
+            print(f"{target_user}{tab}{project_only}")
+
+        sleep(float_sleep)
+
+def execute_list_user_groups(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    target_user = args.target_user
+    user_groups = connection.get_json(f"/xapi/users/{target_user}/groups")
+    index = 1
+    group_length = len(user_groups)
+    float_sleep = 0.0
+    if (args.sleep is not None):
+        float_sleep = float(args.sleep)
+
+    tab = "\t"
+    for x_group in user_groups:
+        if args.verbose:
+            print(f"{index}{tab}{group_length}{tab}{target_user}{tab}{x_group}")
+            index += 1
+        else:
+            print(f"{target_user}{tab}{x_group}")
+
+        sleep(float_sleep)
+
+def execute_list_user_roles(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    target_user = args.target_user
+    user_roles = connection.get_json(f"/xapi/users/{target_user}/roles")
+    index = 1
+    role_length = len(user_roles)
+    float_sleep = 0.0
+    if (args.sleep is not None):
+        float_sleep = float(args.sleep)
+
+    tab = "\t"
+    for x_role in user_roles:
+        if args.verbose:
+            print(f"{index}{tab}{role_length}{tab}{target_user}{tab}{x_role}")
+            index += 1
+        else:
+            print(f"{target_user}{tab}{x_role}")
+
+        sleep(float_sleep)
+
+def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    if (args.projects):
+        execute_list_user_projects(connection, args)
+    elif (args.roles):
+        execute_list_user_roles(connection, args)
+    elif (args.groups):
+        execute_list_user_groups(connection, args)
+    else:
+        print("Request to list requires --projects or --roles")
 
 def execute_user_group_clone(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     source_user = args.clone_groups
@@ -60,100 +120,32 @@ def execute_user_group_clone(connection: xnat.session.XNATSession, args: argpars
         sleep(float_sleep)
 
 
-#    for proj in connection.projects:
-#        y = connection.projects[proj]
-#        print(format_project_data(y))
-
-def format_subject_header_rows() -> str:
-    return "Project ID, Project Label, ID, Label, Insert Date, Experiment Count"
-def format_subject_data(p) -> str:
-    return f"{p.id}, {p.label}, {p.insert_date}, {len(p.experiments)} "
-
-def execute_subject_list(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-
-    if (args.subjects):
-        print("\nSubject List")
-        print(format_subject_header_rows())
-        for proj in connection.projects:
-            project_header = format_project_id_name(connection.projects[proj])
-            for subject in connection.projects[proj].subjects.values():
-                print(f"{project_header}, {format_subject_data(subject)}")
-                x = ""
-                y = ""
-
-
-
-def format_session_header_rows(brief_format_flag) -> str:
-    if brief_format_flag is not None and brief_format_flag is True:
-        return "Project ID\tSession ID\tSession Label"
-    else:
-        return "Project ID\tSession ID\tSession Label\tInsert Date\tModality\tScan Count"
-
-
-def format_session_data(project_id, p, brief_format_flag) -> str:
-    if brief_format_flag is not None and brief_format_flag is True:
-        return f"{project_id}\t{p.id}\t{p.label}\t "
-    else:
-        return f"{project_id}\t{p.id}\t{p.label}\t{p.insert_date}\t{p.modality}\t{len(p.scans)} "
-
-def execute_session_list(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-
-    if (args.csv_file is None):
-        print ("\nSession List")
-        print(format_session_header_rows(args.brief_format))
-        for proj in connection.projects:
-            if (args.project_id is None or args.project_id == proj):
-                po = connection.projects[proj]
-                for experiment_obj in po.experiments.values():
-                    print(format_session_data(proj, experiment_obj, args.brief_format))
-    else:
-        print("\nSelected Sessions")
-        print(format_session_header_rows(args.brief_format))
-        with open(args.csv_file, newline='') as csvfile:
-            rdr = csv.reader(csvfile, delimiter='\t')
-            for row in rdr:
-                experiment_obj = connection.create_object(f"/data/projects/{row[0]}/experiments/{row[1]}")
-                print(format_session_data(row[0], experiment_obj, args.brief_format))
-#                print(f"{row[0]}\t{row[1]}\t{experiment_obj}\t{experiment_obj.id}")
-
-def execute_session_delete(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-
-    print("\nDelete Sessions")
-    with open(args.csv_file, newline='') as csvfile:
-        rdr = csv.reader(csvfile, delimiter='\t')
-        for row in rdr:
-            experiment_obj = connection.create_object(f"/data/projects/{row[0]}/experiments/{row[1]}")
-            print(f"{row[0]}\t{row[1]}\t{experiment_obj}")
-            experiment_obj.delete(remove_files=True)
-
-def execute_session_rename(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-
-    print("\nRename Sessions")
-    with open(args.csv_file, newline='') as csvfile:
-        rdr = csv.reader(csvfile, delimiter='\t')
-        for row in rdr:
-            experiment_obj = connection.create_object(f"/data/projects/{row[0]}/experiments/{row[1]}")
-            subject_id = experiment_obj.subject_id
-            experiment_id = experiment_obj.id
-            query_arguments = {"label": row[2]}
-            print(f"{row[0]}\t{row[1]}\t{row[2]}\t{experiment_obj} {query_arguments}")
-            url_path=f"/REST/projects/{row[0]}/subjects/{subject_id}/experiments/{experiment_id}"
-            print(f"{url_path} {query_arguments}")
-            connection.put(url_path, query=query_arguments)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="List projects from an XNAT system")
+
+    ## XNAT user/login information
     parser.add_argument('-x', '--xnat',            dest='url',             help="URL to XNAT, default is https://cnda.wustl.edu")
     parser.add_argument('-u', '--user',            dest='user',            help="User login for access to XNAT", required=True)
     parser.add_argument('-e', '--extension_types', dest='extension_types', help="True or False for extension_types in xnat.connect")
-#    parser.add_argument('-c', '--csv_file',        dest='csv_file',        help="CSV file with list of sessions for operations")
-    parser.add_argument('-l', '--list',            dest='list_projects',   help="Action is to LIST projects",    action='store_true')
-    parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",          action='store_true')
+
+    ## These are operations
+    parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",             action='store_true')
     parser.add_argument('-C', '--clone_groups',    dest='clone_groups',    help='Clone the user group from this user')
+    parser.add_argument('-R', '--remove',          dest='remove',          help='Remove role(s) this user')
+
+    # These are objects of the operations; they regulate the action
+    parser.add_argument('-p', '--projects',        dest='projects',        help='Verb object: Projects',         action='store_true')
+    parser.add_argument('-g', '--groups',          dest='groups',          help='Verb object: Groups',           action='store_true')
+    parser.add_argument('-r', '--roles',           dest='roles',           help='Verb object: Roles',            action='store_true')
+    parser.add_argument('-c', '--csv_file',        dest='csv_file',        help="CSV file with list of objects (projects, roles, ...) for operations")
     parser.add_argument('-t', '--target_user',     dest='target_user',     help='Target user: Operations performed on the target')
+
+    ## Furhter modifiers
+    parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",          action='store_true')
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode", action='store_true')
-    parser.add_argument('-z', '--zebra',           dest='zebra',           help="Zebra mode", action='store_true')
+    parser.add_argument('-z', '--zebra',           dest='zebra',           help="Zebra mode for testing/debugging", action='store_true')
 
 #    parser.add_argument('-p', '--project',         dest='project_id',      help="Optional Project ID used in list process")
 #    parser.add_argument('-d', '--delete',          dest='delete_sessions', help="Action is to DELETE sessions",  action='store_true')
@@ -165,13 +157,13 @@ if __name__ == "__main__":
     args.extension_types = False if args.extension_types is None else args.extension_types
 
     password = None
-#    password="admin"
+    password="admin"
     print(f"args.extension_types: {args.extension_types}")
     args.extension_types = "True" if args.extension_types is None else args.extension_types
     connection = xnat.connect(args.url, user=args.user, password=password, extension_types=False)
 
-    if args.list_projects:
-        execute_project_list(connection, args)
+    if args.list:
+        execute_list_master(connection, args)
     elif args.clone_groups:
         execute_user_group_clone(connection, args)
 #    elif args.rename_sessions:
