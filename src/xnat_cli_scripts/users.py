@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     ## XNAT user/login information
     parser.add_argument('-x', '--xnat',            dest='url',             help="URL to XNAT, default is https://cnda.wustl.edu")
-    parser.add_argument('-u', '--user',            dest='user',            help="User login for access to XNAT", required=True)
+    parser.add_argument('-a', '--auth',            dest='user',            help="User authentication/login for access to XNAT", required=True)
     parser.add_argument('-e', '--extension_types', dest='extension_types', help="True or False for extension_types in xnat.connect")
 
     ## These are operations
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--csv',             dest='csv_file',        help="CSV file with list of objects (projects, roles, ...) for operations")
     parser.add_argument('-t', '--target_user',     dest='target_user',     help='Target user: Operations performed on the target')
 
-    ## Furhter modifiers
+    ## Further modifiers
     parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",          action='store_true')
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode", action='store_true')
