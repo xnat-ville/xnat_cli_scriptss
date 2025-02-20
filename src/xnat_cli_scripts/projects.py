@@ -1,35 +1,22 @@
 #!/bin/python3
 """
-delete.py
+projects.py
 ---
 --------------------------------------------------------------------------------
-This applicatiob interacts with a target **XNAT**, and
 
-Example usage of the CLI:
-```bash
-$ python3 -m xport_manifest -X <xnat_name> [search_opts] [SCOPE]
-```
-"""
+This script interacts with a target XNAT instance to list and manage projects and users. 
+
+Example usage:
+    List all projects:
+        python3 -m xnat_cli_scripts.projects -L
 
 __version__ = (1, 0, 0)
+
+"""
 
 import argparse
 
 import requests
-#import contextlib
-#import enum
-#import io
-#import math
-#import os
-#import pathlib
-#import re
-#import sys
-#import tempfile
-#import typing
-#import urllib.parse
-
-#import click
-#import fabric
 import xnat
 import xnat.core
 import xnat.mixin
