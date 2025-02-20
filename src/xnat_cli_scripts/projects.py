@@ -20,6 +20,7 @@ import requests
 import xnat
 import xnat.core
 import xnat.mixin
+import csv
 
 def format_project_header_rows() -> str:
     return "ID\tName\tInsert Date\tSubject Count\tExperiment Count\PI"
@@ -50,15 +51,30 @@ def format_project_id_name(p) -> str:
 
 
 def execute_list_projects(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    all_projects = session.get_json(f"/data/projects")
-    result_set = all_projects['ResultSet']
-    result     = result_set['Result']
+    
+    if args.csv_file:
+        # Read project IDs from CSV file
+        project_ids = []
+        with open(args.csv_file, mode='r') as file:
+            csv_reader = csv.reader(file, delimiter='\t')
+            for row in csv_reader:
+                project_ids.append(row[0])  # Assuming the project ID is in the first column
 
-    for project_json in result:
-        project_object = session.projects[project_json['ID']]
-        project_id = project_json['ID']
-        project_name = project_json['name']
-        print(format_project_data(project_json, project_object, args))
+        # List only the projects from the CSV
+        for project_id in project_ids:
+            project_object = session.projects.get(project_id)
+            if project_object:
+                print(format_project_data({}, project_object, args))
+    else:
+        # List all projects as usual
+        all_projects = session.get_json(f"/data/projects")
+        result_set = all_projects['ResultSet']
+        result = result_set['Result']
+
+        for project_json in result:
+            project_object = session.projects[project_json['ID']]
+            print(format_project_data(project_json, project_object, args))
+
 
 def execute_list_project_users(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     all_projects = session.get_json(f"/data/projects")
@@ -172,6 +188,8 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",               action='store_true')
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                       action='store_true')
+    parser.add_argument('--csv',                   dest='csv_file', help='Path to CSV file for listing projects')
+
 
     args = parser.parse_args()
 
