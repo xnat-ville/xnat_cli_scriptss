@@ -125,12 +125,12 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
     This version removes the specified groups and appends "REMOVED" or "ERROR" to each line.
     """
     
-    if args.remove_csv:
+    if args.remove_groups_csv:
         # Read the CSV file for groups to remove
         groups_to_remove = []
 
         try:
-            with open(args.remove_csv, mode='r') as file:
+            with open(args.remove_groups_csv, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
                 for row in csv_reader:
                     # Verify row length and content
@@ -144,7 +144,7 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
                     groups_to_remove.append((project, user, group))
 
         except FileNotFoundError:
-            print(f"[ERROR] CSV file not found: {args.remove_csv}")
+            print(f"[ERROR] CSV file not found: {args.remove_groups_csv}")
             return
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
@@ -370,7 +370,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     # Check for REMOVE action first
-    if args.remove_groups and args.remove_csv:
+    if args.remove_groups and args.remove_groups_csv:
         execute_remove_groups(connection, args)
         return
 
@@ -474,7 +474,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                               action='store_true')
     parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file for listing projects')
-    parser.add_argument('--remove-csv',            dest='remove_csv',      help='CSV file containing {project}{tab}{group} for -R removal of groups')
+    parser.add_argument('--remove-groups-csv',     dest='remove_groups_csv',      help='CSV file containing {project}{tab}{group} for -R removal of groups')
     parser.add_argument('--change-groups-csv',     dest='change_groups_csv', help='CSV file containing {project}{tab}{user}{tab}{group} for group changes')
     parser.add_argument('--accessibilities-csv',   dest='accessibilities_csv', help="CSV file with project ID and new accessibility")
 
