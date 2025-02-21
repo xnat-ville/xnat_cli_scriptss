@@ -15,11 +15,11 @@ __version__ = (1, 0, 0)
 """
 
 import argparse
-
 import requests
 import xnat
 import xnat.core
 import xnat.mixin
+from xnat.session import XNATSession
 import csv
 
 def format_project_header_rows() -> str:
@@ -106,15 +106,78 @@ def execute_list_project_groups(connection: xnat.session.XNATSession, args: argp
         for user in user_results:
             print(f"{project_id}\t{user['login']}\t{user['GROUP_ID']}")
 
+def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> None:
+    """
+    Remove groups specified in the CSV file.
+    CSV Format: {project}{tab}{user}{tab}{group}
+    The script will ignore {project} and {user} and will only target {group}.
+    """
+    
+    if args.csv_groups:
+       
+        # Read the CSV file for groups to remove
+        groups_to_remove = []
+
+        try:
+            with open(args.csv_groups, mode='r') as file:
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    
+                    # Verify row length and content
+                    if len(row) < 3:
+                        continue
+                    
+                    project = row[0].strip()  # Project ID (for logging and better context)
+                    user = row[1].strip()     # User (for logging and context)
+                    group = row[2].strip()    # Group to be removed
+                    
+                    groups_to_remove.append((project, user, group))
+
+        except FileNotFoundError:
+            print(f"[ERROR] CSV file not found: {args.csv_groups}")
+            return
+        except Exception as e:
+            print(f"[ERROR] Exception while reading CSV: {e}")
+            return
+
+        # Iterate over each group and remove it
+        for project, user, group in groups_to_remove:
+            
+            # XNAT API Call for group removal
+            endpoint = f"/data/projects/{project}/users/{group}/{user}"
+            full_url = f"{args.url}{endpoint}"  # Using args.url to construct the full URL
+
+            try:
+                response = requests.delete(full_url, auth=(args.auth, 'admin'), verify=False)  # Using requests directly
+                
+                if response.status_code == 200:
+                    print(f"[SUCCESS] User '{user}' removed from group '{group}' in project '{project}' successfully.")
+                elif response.status_code == 404:
+                    print(f"[WARNING] User '{user}' or group '{group}' not found in project '{project}'.")
+                else:
+                    print(f"[ERROR] Failed to remove user '{user}' from group '{group}' in project '{project}'. Status Code: {response.status_code}")
+
+            except requests.exceptions.RequestException as e:
+                print(f"[ERROR] Request Exception: {e}")
+    else:
+        print("[ERROR] No CSV file specified for group removal.")
+
+
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    if (args.users):
+    # Debug prints
+
+    # Check for REMOVE action first
+    if args.remove_groups and args.csv_groups:
+        execute_remove_groups(connection, args)
+        return
+
+    # Check for LIST actions next
+    if args.users:
         execute_list_project_users(connection, args)
-    elif (args.groups):
+    elif args.groups:
         execute_list_project_groups(connection, args)
     else:
         execute_list_projects(connection, args)
-
-
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
 #
@@ -177,23 +240,24 @@ if __name__ == "__main__":
 
     ## These are operations
     parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",                  action='store_true')
-
+    parser.add_argument('-R', '--remove-groups', dest='remove_groups', help='Remove groups from projects', action='store_true')
+    
     # These are objects of the operations; they regulate the action
-    parser.add_argument('-u', '--users',           dest='users',           help='Verb object: Users',                 action='store_true')
-    parser.add_argument('-g', '--groups',          dest='groups',          help='Verb object: Groups',                action='store_true')
-    parser.add_argument(      '--subjects',        dest='subjects',        help="Include list of subjects in output", action='store_true')
-    parser.add_argument(      '--sessions',        dest='sessions',        help="Include list of sessions in output", action='store_true')
+    parser.add_argument('-u', '--users',           dest='users',           help='Listing Verb object: Users',                 action='store_true')
+    parser.add_argument('-g', '--groups',          dest='groups',          help='Listing Verb object: Groups',                action='store_true')
+    parser.add_argument(      '--subjects',        dest='subjects',        help="Include list of subjects in output",         action='store_true')
+    parser.add_argument(      '--sessions',        dest='sessions',        help="Include list of sessions in output",         action='store_true')
 
     ## Further modifiers
     parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",               action='store_true')
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                       action='store_true')
     parser.add_argument('--csv',                   dest='csv_file', help='Path to CSV file for listing projects')
-
+    parser.add_argument('--csv-groups', dest='csv_groups', help='CSV file containing {project}{tab}{group} for removal')
 
     args = parser.parse_args()
 
-    args.url = "https://cnda.wustl.edu" if args.url is None else args.url
+    args.url = "http://localhost" if args.url is None else args.url
 
 #    print(args.extension_types)
 
@@ -204,8 +268,9 @@ if __name__ == "__main__":
     session = xnat.connect(args.url, user=args.auth, password=password, extension_types=bool(args.extension_types == "True"))
 
 
-    if args.list:
-        execute_list_master(session, args)
+if args.list or args.remove_groups:
+    execute_list_master(session, args)
+
 
 
 #    execute_project_list(session, args)
