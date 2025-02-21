@@ -122,8 +122,7 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
     """
     Remove groups specified in the CSV file.
     CSV Format: {project}{tab}{user}{tab}{group}
-    This version removes the specified groups and prints the current state (project, group) 
-    to reflect the current state after the removal.
+    This version removes the specified groups and appends "REMOVED" or "ERROR" to each line.
     """
     
     if args.remove_csv:
@@ -160,14 +159,15 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
             try:
                 response = requests.delete(full_url, auth=(args.auth, 'admin'), verify=False)
                 if response.status_code == 200:
-                    # Print the removed group and user in tab-delimited format
-                    print(f"{project}\t{user}\t{group}")
+                    # Append REMOVED to the line if successful
+                    print(f"{project}\t{user}\t{group}\tREMOVED")
+                else:
+                    # Append ERROR to the line if failed
+                    print(f"{project}\t{user}\t{group}\tERROR")
             except requests.exceptions.RequestException:
-                continue  # Silently ignore request exceptions
+                # If a request exception occurs, also append ERROR
+                print(f"{project}\t{user}\t{group}\tERROR")
 
-        # We don't need to re-run the -L -g logic anymore
-        # Instead, print the final output (the groups that were removed)
-        print("\nGroups above removed successfully.")
 
 
 
@@ -213,6 +213,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
     Update the accessibility of projects based on the CSV file.
     CSV Format: {project_id}{tab}{new_accessibility}
     The system checks the current accessibility in XNAT and updates it if necessary.
+    Echoes back the original input line and appends "UPDATED to {new_accessibility}" or "ERROR".
     """
 
     if args.accessibilities_csv:
@@ -266,17 +267,18 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                     response = requests.put(full_url, auth=(args.auth, 'admin'), verify=False)
 
                     if response.status_code == 200:
-                        # Print the updated project ID and new accessibility in tab-delimited format
-                        print(f"{project_id}\t{new_accessibility}")
+                        # Echo back the original input line and append UPDATED to {new_accessibility} with a tab
+                        print(f"{project_id}\t{new_accessibility}\tUPDATED to {new_accessibility}")
                     else:
-                        # If there's a failure, print the failure status code
-                        print(f"[ERROR] Failed to update accessibility for project '{project_id}'. Status Code: {response.status_code}")
+                        # If there's a failure, append ERROR with a tab
+                        print(f"{project_id}\t{new_accessibility}\tERROR")
                 
                 except requests.exceptions.RequestException as e:
-                    print(f"[ERROR] Request exception while updating project '{project_id}': {e}")
+                    # If a request exception occurs, also append ERROR with a tab
+                    print(f"{project_id}\t{new_accessibility}\tERROR")
             else:
-                # If no update was needed, print the current accessibility (assuming no change is needed)
-                print(f"{project_id}\t{current_accessibility}")
+                # If no update was needed, print the current accessibility with NO CHANGE with a tab
+                print(f"{project_id}\t{new_accessibility}\tNO CHANGE")
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
