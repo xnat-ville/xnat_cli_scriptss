@@ -162,22 +162,60 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
     else:
         print("[ERROR] No CSV file specified for group removal.")
 
+def execute_list_project_accessibilities(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    """
+    Lists project accessibilities (private/public/protected)
+    Output format: {project}{tab}{accessibility}
+    """
+    project_ids = []
+
+    # If CSV file is specified, read project IDs from CSV
+    if args.csv_file:
+        with open(args.csv_file, mode='r') as file:
+            csv_reader = csv.reader(file, delimiter='\t')
+            for row in csv_reader:
+                project_ids.append(row[0])  # Assuming project ID is in the first column
+
+    # Get all projects
+    all_projects = connection.get_json(f"/data/projects")
+    result_set = all_projects['ResultSet']
+    result = result_set['Result']
+
+    for project_json in result:
+        project_id = project_json['ID']
+
+        # If CSV is used, check if the project is in the CSV list
+        if args.csv_file and project_id not in project_ids:
+            continue
+
+        # Get accessibility using requests directly since the endpoint returns plain text
+        url = f"{args.url}/data/projects/{project_id}/accessibility"
+        response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+        
+        if response.status_code == 200:
+            accessibility = response.text.strip()  # Plain text response
+        else:
+            accessibility = "Unknown"  # Fallback for error cases
+        
+        print(f"{project_id}\t{accessibility}")
+
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    # Debug prints
-
     # Check for REMOVE action first
     if args.remove_groups and args.csv_groups:
         execute_remove_groups(connection, args)
         return
 
     # Check for LIST actions next
-    if args.users:
+    if args.list and args.accessibilities:
+        execute_list_project_accessibilities(connection, args)
+    elif args.list and args.users:
         execute_list_project_users(connection, args)
-    elif args.groups:
+    elif args.list and args.groups:
         execute_list_project_groups(connection, args)
-    else:
+    elif args.list:
         execute_list_projects(connection, args)
+
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
 #
@@ -239,21 +277,23 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--extension_types', dest='extension_types', help="True or False for extension_types in xnat.connect")
 
     ## These are operations
-    parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",                  action='store_true')
-    parser.add_argument('-R', '--remove-groups', dest='remove_groups', help='Remove groups from projects', action='store_true')
+    parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",                          action='store_true')
+    parser.add_argument('-R', '--remove-groups',   dest='remove_groups',   help='Remove groups from projects',                action='store_true')
     
     # These are objects of the operations; they regulate the action
     parser.add_argument('-u', '--users',           dest='users',           help='Listing Verb object: Users',                 action='store_true')
     parser.add_argument('-g', '--groups',          dest='groups',          help='Listing Verb object: Groups',                action='store_true')
     parser.add_argument(      '--subjects',        dest='subjects',        help="Include list of subjects in output",         action='store_true')
     parser.add_argument(      '--sessions',        dest='sessions',        help="Include list of sessions in output",         action='store_true')
+    parser.add_argument('-acc', '--accessibilities', dest='accessibilities', help="List accessibilities for projects",          action='store_true')
+
 
     ## Further modifiers
-    parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",               action='store_true')
+    parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",                       action='store_true')
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
-    parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                       action='store_true')
-    parser.add_argument('--csv',                   dest='csv_file', help='Path to CSV file for listing projects')
-    parser.add_argument('--csv-groups', dest='csv_groups', help='CSV file containing {project}{tab}{group} for removal')
+    parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                               action='store_true')
+    parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file for listing projects')
+    parser.add_argument('--csv-groups',            dest='csv_groups',      help='CSV file containing {project}{tab}{group} for removal')
 
     args = parser.parse_args()
 
