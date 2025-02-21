@@ -168,6 +168,93 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
                 # If a request exception occurs, also append ERROR
                 print(f"{project}\t{user}\t{group}\tERROR")
 
+def execute_change_groups(connection: XNATSession, args: argparse.Namespace) -> None:
+    """
+    Change groups specified in the CSV file.
+    CSV Format: {project}{tab}{user}{tab}{new_group}
+    Detects group changes and:
+      - Removes user from old group
+      - Adds user to new group
+    Echoes back the original input line and appends:
+      - "CHANGED" if successful
+      - "NO CHANGE" if no change was needed
+      - "ERROR" if failed
+    """
+
+    if args.change_groups_csv:
+        # Read the CSV file for group changes
+        groups_to_change = []
+
+        try:
+            with open(args.change_groups_csv, mode='r') as file:
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    # Ensure the row contains project ID, user, and group
+                    if len(row) < 3:
+                        continue
+                    
+                    project = row[0].strip()  # Project ID
+                    user = row[1].strip()     # User
+                    new_group = row[2].strip()  # New Group
+                    
+                    # Get current group
+                    url = f"{args.url}/data/projects/{project}/users"
+                    response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+
+                    if response.status_code == 200:
+                        # Search for the current group of the user
+                        user_groups = response.json()['ResultSet']['Result']
+                        current_group = None
+                        for ug in user_groups:
+                            if ug['login'] == user:
+                                current_group = ug['GROUP_ID']
+                                break
+
+                        if current_group is None:
+                            # User not found in this project
+                            print(f"{project}\t{user}\t{new_group}\tERROR: User not found in project")
+                            continue
+                    else:
+                        print(f"{project}\t{user}\t{new_group}\tERROR: Failed to fetch current group")
+                        continue
+
+                    # Check if the group has changed
+                    if current_group != new_group:
+                        # Remove from old group first
+                        remove_endpoint = f"/data/projects/{project}/users/{current_group}/{user}"
+                        remove_url = f"{args.url}{remove_endpoint}"
+
+                        try:
+                            response = requests.delete(remove_url, auth=(args.auth, 'admin'), verify=False)
+
+                            if response.status_code == 200:
+                                # Then add to the new group using the correct endpoint
+                                add_endpoint = f"/data/projects/{project}/users/{new_group}/{user}"
+                                add_url = f"{args.url}{add_endpoint}"
+
+                                response = requests.put(add_url, auth=(args.auth, 'admin'), verify=False)
+
+                                if response.status_code == 200:
+                                    # Echo back the original input line and append CHANGED to {new_group}
+                                    print(f"{project}\t{user}\t{new_group}\tCHANGED")
+                                else:
+                                    # If adding failed, print ERROR with details
+                                    print(f"{project}\t{user}\t{new_group}\tERROR: Failed to add to new group - {response.status_code}")
+                            else:
+                                # If removing failed, print ERROR with details
+                                print(f"{project}\t{user}\t{new_group}\tERROR: Failed to remove from old group - {response.status_code}")
+
+                        except requests.exceptions.RequestException as e:
+                            # If a request exception occurs, also append ERROR
+                            print(f"{project}\t{user}\t{new_group}\tERROR: Request exception - {e}")
+                    else:
+                        # If no change was needed, print the current group with NO CHANGE
+                        print(f"{project}\t{user}\t{new_group}\tNO CHANGE")
+
+        except FileNotFoundError:
+            print(f"[ERROR] CSV file not found: {args.change_groups_csv}")
+        except Exception as e:
+            print(f"[ERROR] Exception while reading CSV: {e}")
 
 
 
@@ -213,7 +300,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
     Update the accessibility of projects based on the CSV file.
     CSV Format: {project_id}{tab}{new_accessibility}
     The system checks the current accessibility in XNAT and updates it if necessary.
-    Echoes back the original input line and appends "UPDATED to {new_accessibility}" or "ERROR".
+    Echoes back the original input line and appends "UPDATED" or "ERROR".
     """
 
     if args.accessibilities_csv:
@@ -268,7 +355,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
                     if response.status_code == 200:
                         # Echo back the original input line and append UPDATED to {new_accessibility} with a tab
-                        print(f"{project_id}\t{new_accessibility}\tUPDATED to {new_accessibility}")
+                        print(f"{project_id}\t{new_accessibility}\tUPDATED")
                     else:
                         # If there's a failure, append ERROR with a tab
                         print(f"{project_id}\t{new_accessibility}\tERROR")
@@ -292,6 +379,11 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
         execute_update_accessibilities(connection, args)
         return
 
+    # Check for CHANGE groups
+    if args.change_groups and args.change_groups_csv:
+        execute_change_groups(connection, args)
+        return
+
     # Check for LIST actions next
     if args.list and args.accessibilities:
         execute_list_project_accessibilities(connection, args)
@@ -301,6 +393,7 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
         execute_list_project_groups(connection, args)
     elif args.list:
         execute_list_projects(connection, args)
+
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
 #
@@ -365,8 +458,10 @@ if __name__ == "__main__":
     parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",                          action='store_true')
     parser.add_argument('-R', '--remove-groups',   dest='remove_groups',   help='Remove groups from projects',                action='store_true')
     parser.add_argument('--update',                dest='update_accessibilities', action='store_true', help="Update accessibility based on CSV file")
+    parser.add_argument('--change-groups',         dest='change_groups', action='store_true', help='Change groups from CSV')
 
-    # These are objects of the LIST operation; they regulate the LIST action
+
+    # These are objects of the LIST operation; they regulate the LIST actions
     parser.add_argument('-u', '--users',           dest='users',           help='Listing Verb object: Users',                 action='store_true')
     parser.add_argument('-g', '--groups',          dest='groups',          help='Listing Verb object: Groups',                action='store_true')
     parser.add_argument('-acc', '--accessibilities', dest='accessibilities',help="List accessibilities for projects",          action='store_true')
@@ -380,6 +475,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                               action='store_true')
     parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file for listing projects')
     parser.add_argument('--remove-csv',            dest='remove_csv',      help='CSV file containing {project}{tab}{group} for -R removal of groups')
+    parser.add_argument('--change-groups-csv',     dest='change_groups_csv', help='CSV file containing {project}{tab}{user}{tab}{group} for group changes')
     parser.add_argument('--accessibilities-csv',   dest='accessibilities_csv', help="CSV file with project ID and new accessibility")
 
 
@@ -396,7 +492,7 @@ if __name__ == "__main__":
     session = xnat.connect(args.url, user=args.auth, password=password, extension_types=bool(args.extension_types == "True"))
 
 
-if args.list or args.remove_groups or args.update_accessibilities:
+if args.list or args.remove_groups or args.update_accessibilities or args.change_groups:
     execute_list_master(session, args)
 
 
