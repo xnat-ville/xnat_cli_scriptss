@@ -125,12 +125,12 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
     This version removes the specified groups and appends "REMOVED" or "ERROR" to each line.
     """
     
-    if args.remove_groups_csv:
+    if args.csv_file:
         # Read the CSV file for groups to remove
         groups_to_remove = []
 
         try:
-            with open(args.remove_groups_csv, mode='r') as file:
+            with open(args.csv_file, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
                 for row in csv_reader:
                     # Verify row length and content
@@ -144,7 +144,7 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
                     groups_to_remove.append((project, user, group))
 
         except FileNotFoundError:
-            print(f"[ERROR] CSV file not found: {args.remove_groups_csv}")
+            print(f"[ERROR] CSV file not found: {args.csv_file}")
             return
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
@@ -181,12 +181,12 @@ def execute_change_groups(connection: XNATSession, args: argparse.Namespace) -> 
       - "ERROR" if failed
     """
 
-    if args.change_groups_csv:
+    if args.csv_file:
         # Read the CSV file for group changes
         groups_to_change = []
 
         try:
-            with open(args.change_groups_csv, mode='r') as file:
+            with open(args.csv_file, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
                 for row in csv_reader:
                     # Ensure the row contains project ID, user, and group
@@ -252,7 +252,7 @@ def execute_change_groups(connection: XNATSession, args: argparse.Namespace) -> 
                         print(f"{project}\t{user}\t{new_group}\tNO CHANGE")
 
         except FileNotFoundError:
-            print(f"[ERROR] CSV file not found: {args.change_groups_csv}")
+            print(f"[ERROR] CSV file not found: {args.csv_file}")
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
 
@@ -370,7 +370,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     # Check for REMOVE action first
-    if args.remove_groups and args.remove_groups_csv:
+    if args.remove_groups and args.csv_file:
         execute_remove_groups(connection, args)
         return
 
@@ -380,7 +380,7 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
         return
 
     # Check for CHANGE groups
-    if args.change_groups and args.change_groups_csv:
+    if args.change_groups and args.csv_file:
         execute_change_groups(connection, args)
         return
 
@@ -473,9 +473,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",                       action='store_true')
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                               action='store_true')
-    parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file for listing projects')
-    parser.add_argument('--remove-groups-csv',     dest='remove_groups_csv',      help='CSV file containing {project}{tab}{group} for -R removal of groups')
-    parser.add_argument('--change-groups-csv',     dest='change_groups_csv', help='CSV file containing {project}{tab}{user}{tab}{group} for group changes')
+    parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file operations such as listing, removing, or changing groups')
     parser.add_argument('--accessibilities-csv',   dest='accessibilities_csv', help="CSV file with project ID and new accessibility")
 
 
