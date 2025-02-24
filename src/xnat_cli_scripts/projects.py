@@ -303,12 +303,12 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
     Echoes back the original input line and appends "UPDATED" or "ERROR".
     """
 
-    if args.accessibilities_csv:
+    if args.csv_file:
         # Read the CSV file for project accessibility updates
         projects_to_update = []
 
         try:
-            with open(args.accessibilities_csv, mode='r') as file:
+            with open(args.csv_file, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
                 for row in csv_reader:
                     # Ensure the row contains both project ID and accessibility
@@ -326,7 +326,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                     projects_to_update.append((project_id, new_accessibility))
 
         except FileNotFoundError:
-            print(f"[ERROR] CSV file not found: {args.accessibilities_csv}")
+            print(f"[ERROR] CSV file not found: {args.csv_file}")
             return
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
@@ -375,7 +375,7 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
         return
 
     # Check for UPDATE accessibilities
-    if args.update_accessibilities and args.accessibilities_csv:
+    if args.update_accessibilities and args.csv_file:
         execute_update_accessibilities(connection, args)
         return
 
@@ -461,9 +461,9 @@ if __name__ == "__main__":
     parser.add_argument('--change-groups',         dest='change_groups', action='store_true', help='Change groups from CSV')
 
 
-    # These are objects of the LIST operation; they regulate the LIST actions
+    # These are objects of the operations; 
     parser.add_argument('-u', '--users',           dest='users',           help='Listing Verb object: Users',                 action='store_true')
-    parser.add_argument('-g', '--groups',          dest='groups',          help='Listing Verb object: Groups',                action='store_true')
+    parser.add_argument('-g', '--groups',          dest='groups',          help='Object: Groups (for both LIST and REMOVE)',  action='store_true')
     parser.add_argument(      '--accessibilities', dest='accessibilities', help="List accessibilities for projects",          action='store_true')
     parser.add_argument(      '--subjects',        dest='subjects',        help="Include list of subjects in output",         action='store_true')
     parser.add_argument(      '--sessions',        dest='sessions',        help="Include list of sessions in output",         action='store_true')
@@ -474,9 +474,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
     parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                               action='store_true')
     parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file operations such as listing, removing, or changing groups')
-    parser.add_argument('--accessibilities-csv',   dest='accessibilities_csv', help="CSV file with project ID and new accessibility")
-
-
+    
     args = parser.parse_args()
 
     args.url = "http://localhost" if args.url is None else args.url
