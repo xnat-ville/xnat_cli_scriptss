@@ -464,7 +464,7 @@ if __name__ == "__main__":
     # These are objects of the LIST operation; they regulate the LIST actions
     parser.add_argument('-u', '--users',           dest='users',           help='Listing Verb object: Users',                 action='store_true')
     parser.add_argument('-g', '--groups',          dest='groups',          help='Listing Verb object: Groups',                action='store_true')
-    parser.add_argument('-acc', '--accessibilities', dest='accessibilities',help="List accessibilities for projects",          action='store_true')
+    parser.add_argument(      '--accessibilities', dest='accessibilities', help="List accessibilities for projects",          action='store_true')
     parser.add_argument(      '--subjects',        dest='subjects',        help="Include list of subjects in output",         action='store_true')
     parser.add_argument(      '--sessions',        dest='sessions',        help="Include list of sessions in output",         action='store_true')
 
