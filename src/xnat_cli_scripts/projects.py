@@ -369,7 +369,31 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    # Check for UPDATE action first (Change Groups)
+    # Check for LIST actions first
+    if args.users:
+        execute_list_project_users(connection, args)
+    elif args.groups:
+        execute_list_project_groups(connection, args)
+    elif args.accessibilities:
+        execute_list_project_accessibilities(connection, args)
+    else:
+        execute_list_projects(connection, args)
+
+
+def execute_remove_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    # Check for REMOVE action
+    if args.remove and args.groups:
+        # If CSV is provided, use it to get groups for removal
+        if args.csv_file:
+            execute_remove_groups(connection, args)
+        else:
+            print("[WARNING] No CSV file provided. Please specify --csv for group removal.")
+    else:
+        print("[WARNING] Invalid REMOVE action. Use -R with -g and --csv.")
+
+
+def execute_update_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    # Check for UPDATE action (Change Groups)
     if args.update and args.groups:
         # If CSV is provided, use it for changing groups
         if args.csv_file:
@@ -385,25 +409,8 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
             execute_update_accessibilities(connection, args)
         else:
             print("[WARNING] No CSV file provided. Please specify --csv for updating accessibilities.")
-        return  # Exit after updating accessibilities
-
-    # Check for REMOVE action next
-    if args.remove and args.groups:
-        # If CSV is provided, use it to get groups for removal
-        if args.csv_file:
-            execute_remove_groups(connection, args)
-        else:
-            print("[WARNING] No CSV file provided. Please specify --csv for group removal.")
-        return  # Exit after removing groups
-
-    # Check for LIST actions last
-    if args.users:
-        execute_list_project_users(connection, args)
-    elif args.groups:
-        execute_list_project_groups(connection, args)
     else:
-        execute_list_projects(connection, args)
-
+        print("[WARNING] Invalid UPDATE action. Use --update with --accessibilities or -g and --csv.")
 
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
@@ -497,8 +504,14 @@ if __name__ == "__main__":
     session = xnat.connect(args.url, user=args.auth, password=password, extension_types=bool(args.extension_types == "True"))
 
 
-if args.list or args.remove or args.update or args.change_groups:
+if args.list:
     execute_list_master(session, args)
+elif args.remove:
+    execute_remove_master(session, args)
+elif args.update:
+    execute_update_master(session, args)
+else:
+    print("[ERROR] No valid action specified. Use -L, -R, or --update.")
 
 
 #    execute_project_list(session, args)
