@@ -369,7 +369,16 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    # Check for UPDATE action first
+    # Check for UPDATE action first (Change Groups)
+    if args.update and args.groups:
+        # If CSV is provided, use it for changing groups
+        if args.csv_file:
+            execute_change_groups(connection, args)
+        else:
+            print("[WARNING] No CSV file provided. Please specify --csv for changing groups.")
+        return  # Exit after changing groups
+
+    # Check for UPDATE action (Update Accessibilities)
     if args.update and args.accessibilities:
         # If CSV is provided, use it for updating accessibilities
         if args.csv_file:
@@ -387,7 +396,6 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
             print("[WARNING] No CSV file provided. Please specify --csv for group removal.")
         return  # Exit after removing groups
 
-
     # Check for LIST actions last
     if args.users:
         execute_list_project_users(connection, args)
@@ -395,6 +403,7 @@ def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Nam
         execute_list_project_groups(connection, args)
     else:
         execute_list_projects(connection, args)
+
 
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
@@ -460,8 +469,6 @@ if __name__ == "__main__":
     parser.add_argument('-L', '--list',            dest='list',                     help="Action is to LIST",                          action='store_true')
     parser.add_argument('-R', '--remove',          dest='remove',                   help='Remove groups from projects',                action='store_true')
     parser.add_argument(        '--update',        dest='update',                   help='Update project accessibilities',             action='store_true')
-    parser.add_argument('--change-groups',         dest='change_groups',            help='Change groups from CSV',                     action='store_true')
-
 
     # These are objects of the operations; 
     parser.add_argument('-u', '--users',           dest='users',                    help='Listing Verb object: Users',                 action='store_true')
