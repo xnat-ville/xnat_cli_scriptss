@@ -369,32 +369,32 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    # --- Handle REMOVE Actions First --- #
-    if args.remove_groups and args.groups:
+    # Check for UPDATE action first
+    if args.update and args.accessibilities:
+        # If CSV is provided, use it for updating accessibilities
+        if args.csv_file:
+            execute_update_accessibilities(connection, args)
+        else:
+            print("[WARNING] No CSV file provided. Please specify --csv for updating accessibilities.")
+        return  # Exit after updating accessibilities
+
+    # Check for REMOVE action next
+    if args.remove and args.groups:
+        # If CSV is provided, use it to get groups for removal
         if args.csv_file:
             execute_remove_groups(connection, args)
-            return
         else:
-            print("[ERROR] --csv is required with -R and -g for removing groups.")
-            return
+            print("[WARNING] No CSV file provided. Please specify --csv for group removal.")
+        return  # Exit after removing groups
 
-    # --- Handle LIST Actions Next --- #
-    if args.list:
-        if args.groups:
-            execute_list_project_groups(connection, args)
-            return
-        
-        if args.users:
-            execute_list_project_users(connection, args)
-            return
-        
-        if args.acc:
-            execute_list_accessibilities(connection, args)
-            return
-        
-        # Default LIST behavior if no object specified
+
+    # Check for LIST actions last
+    if args.users:
+        execute_list_project_users(connection, args)
+    elif args.groups:
+        execute_list_project_groups(connection, args)
+    else:
         execute_list_projects(connection, args)
-
 
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
@@ -452,30 +452,30 @@ def execute_session_list(session: xnat.session.XNATSession, args: argparse.Names
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="List projects from an XNAT system")
-    parser.add_argument('-x', '--xnat',            dest='url',             help="URL to XNAT, default is https://cnda.wustl.edu")
-    parser.add_argument('-a', '--auth',            dest='auth',            help="User authentication/login for access to XNAT", required=True)
-    parser.add_argument('-e', '--extension_types', dest='extension_types', help="True or False for extension_types in xnat.connect")
+    parser.add_argument('-x', '--xnat',            dest='url',                      help="URL to XNAT, default is https://cnda.wustl.edu")
+    parser.add_argument('-a', '--auth',            dest='auth',                     help="User authentication/login for access to XNAT", required=True)
+    parser.add_argument('-e', '--extension_types', dest='extension_types',          help="True or False for extension_types in xnat.connect")
 
     ## These are operations
-    parser.add_argument('-L', '--list',            dest='list',            help="Action is to LIST",                          action='store_true')
-    parser.add_argument('-R', '--remove-groups',   dest='remove_groups',   help='Remove groups from projects',                action='store_true')
-    parser.add_argument('--update',                dest='update_accessibilities', action='store_true', help="Update accessibility based on CSV file")
-    parser.add_argument('--change-groups',         dest='change_groups', action='store_true', help='Change groups from CSV')
+    parser.add_argument('-L', '--list',            dest='list',                     help="Action is to LIST",                          action='store_true')
+    parser.add_argument('-R', '--remove',          dest='remove',                   help='Remove groups from projects',                action='store_true')
+    parser.add_argument(        '--update',        dest='update',                   help='Update project accessibilities',             action='store_true')
+    parser.add_argument('--change-groups',         dest='change_groups',            help='Change groups from CSV',                     action='store_true')
 
 
     # These are objects of the operations; 
-    parser.add_argument('-u', '--users',           dest='users',           help='Listing Verb object: Users',                 action='store_true')
-    parser.add_argument('-g', '--groups',          dest='groups',          help='Object: Groups (for both LIST and REMOVE)',  action='store_true')
-    parser.add_argument(      '--accessibilities', dest='accessibilities', help="List accessibilities for projects",          action='store_true')
-    parser.add_argument(      '--subjects',        dest='subjects',        help="Include list of subjects in output",         action='store_true')
-    parser.add_argument(      '--sessions',        dest='sessions',        help="Include list of sessions in output",         action='store_true')
+    parser.add_argument('-u', '--users',           dest='users',                    help='Listing Verb object: Users',                 action='store_true')
+    parser.add_argument('-g', '--groups',          dest='groups',                   help='Object: Groups (for both LIST and REMOVE)',  action='store_true')
+    parser.add_argument(      '--accessibilities', dest='accessibilities',          help="Accessibilities for projects",                action='store_true')
+    parser.add_argument(      '--subjects',        dest='subjects',                 help="Include list of subjects in output",         action='store_true')
+    parser.add_argument(      '--sessions',        dest='sessions',                 help="Include list of sessions in output",         action='store_true')
 
 
     ## Further modifiers
-    parser.add_argument('-b', '--brief',           dest='brief_format',    help="List in brief format",                       action='store_true')
-    parser.add_argument('-s', '--sleep',           dest='sleep',           help="Time to sleep after each REST call")
-    parser.add_argument('-v', '--verbose',         dest='verbose',         help="Verbose mode",                               action='store_true')
-    parser.add_argument('--csv',                   dest='csv_file',        help='Path to CSV file operations such as listing, removing, or changing groups')
+    parser.add_argument('-b', '--brief',           dest='brief_format',             help="List in brief format",                       action='store_true')
+    parser.add_argument('-s', '--sleep',           dest='sleep',                    help="Time to sleep after each REST call")
+    parser.add_argument('-v', '--verbose',         dest='verbose',                  help="Verbose mode",                               action='store_true')
+    parser.add_argument('--csv',                   dest='csv_file',                 help='Path to CSV file operations such as listing, removing, or changing groups')
     
     args = parser.parse_args()
 
@@ -490,7 +490,7 @@ if __name__ == "__main__":
     session = xnat.connect(args.url, user=args.auth, password=password, extension_types=bool(args.extension_types == "True"))
 
 
-if args.list or args.remove_groups or args.update_accessibilities or args.change_groups:
+if args.list or args.remove or args.update or args.change_groups:
     execute_list_master(session, args)
 
 
