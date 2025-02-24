@@ -369,30 +369,32 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    # Check for REMOVE action first
-    if args.remove_groups and args.csv_file:
-        execute_remove_groups(connection, args)
-        return
+    # --- Handle REMOVE Actions First --- #
+    if args.remove_groups and args.groups:
+        if args.csv_file:
+            execute_remove_groups(connection, args)
+            return
+        else:
+            print("[ERROR] --csv is required with -R and -g for removing groups.")
+            return
 
-    # Check for UPDATE accessibilities
-    if args.update_accessibilities and args.csv_file:
-        execute_update_accessibilities(connection, args)
-        return
-
-    # Check for CHANGE groups
-    if args.change_groups and args.csv_file:
-        execute_change_groups(connection, args)
-        return
-
-    # Check for LIST actions next
-    if args.list and args.accessibilities:
-        execute_list_project_accessibilities(connection, args)
-    elif args.list and args.users:
-        execute_list_project_users(connection, args)
-    elif args.list and args.groups:
-        execute_list_project_groups(connection, args)
-    elif args.list:
+    # --- Handle LIST Actions Next --- #
+    if args.list:
+        if args.groups:
+            execute_list_project_groups(connection, args)
+            return
+        
+        if args.users:
+            execute_list_project_users(connection, args)
+            return
+        
+        if args.acc:
+            execute_list_accessibilities(connection, args)
+            return
+        
+        # Default LIST behavior if no object specified
         execute_list_projects(connection, args)
+
 
 
 #def execute_project_list(session: xnat.session.XNATSession, args: argparse.Namespace) -> None:
