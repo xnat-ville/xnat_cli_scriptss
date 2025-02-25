@@ -516,12 +516,10 @@ if __name__ == "__main__":
 
 #    print(args.extension_types)
 
-#    password = None
-    password = "admin"
+#    password = "admin"
     args.extension_types = "True" if args.extension_types is None else args.extension_types
 
-    session = xnat.connect(args.url, user=args.auth, password=password, extension_types=bool(args.extension_types == "True"))
-
+    session = xnat.connect(args.url, extension_types=False)
 
 if args.list:
     execute_list_master(session, args)
