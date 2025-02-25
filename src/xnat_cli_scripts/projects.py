@@ -170,20 +170,18 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
 
 def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> None:
     """
-    Change groups specified in the CSV file.
+    Update groups specified in the CSV file.
     CSV Format: {project}{tab}{user}{tab}{new_group}
-    Detects group changes and:
-      - Removes user from old group
-      - Adds user to new group
+    Adds user to the new group.
+    Since XNAT automatically removes user from old group, no need to check or delete old group.
     Echoes back the original input line and appends:
       - "CHANGED" if successful
-      - "NO CHANGE" if no change was needed
       - "ERROR" if failed
     """
 
     if args.csv_file:
         # Read the CSV file for group changes
-        groups_to_change = []
+        groups_to_update = []
 
         try:
             with open(args.csv_file, mode='r') as file:
@@ -191,71 +189,41 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
                 for row in csv_reader:
                     # Ensure the row contains project ID, user, and group
                     if len(row) < 3:
+                        print(f"[ERROR] Invalid row format: {row}. Expected format: project_id\tuser\tnew_group")
                         continue
                     
                     project = row[0].strip()  # Project ID
                     user = row[1].strip()     # User
                     new_group = row[2].strip()  # New Group
                     
-                    # Get current group
-                    url = f"{args.url}/data/projects/{project}/users"
-                    response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
-
-                    if response.status_code == 200:
-                        # Search for the current group of the user
-                        user_groups = response.json()['ResultSet']['Result']
-                        current_group = None
-                        for ug in user_groups:
-                            if ug['login'] == user:
-                                current_group = ug['GROUP_ID']
-                                break
-
-                        if current_group is None:
-                            # User not found in this project
-                            print(f"{project}\t{user}\t{new_group}\tERROR: User not found in project")
-                            continue
-                    else:
-                        print(f"{project}\t{user}\t{new_group}\tERROR: Failed to fetch current group")
-                        continue
-
-                    # Check if the group has changed
-                    if current_group != new_group:
-                        # Remove from old group first
-                        remove_endpoint = f"/data/projects/{project}/users/{current_group}/{user}"
-                        remove_url = f"{args.url}{remove_endpoint}"
-
-                        try:
-                            response = requests.delete(remove_url, auth=(args.auth, 'admin'), verify=False)
-
-                            if response.status_code == 200:
-                                # Then add to the new group using the correct endpoint
-                                add_endpoint = f"/data/projects/{project}/users/{new_group}/{user}"
-                                add_url = f"{args.url}{add_endpoint}"
-
-                                response = requests.put(add_url, auth=(args.auth, 'admin'), verify=False)
-
-                                if response.status_code == 200:
-                                    # Echo back the original input line and append CHANGED to {new_group}
-                                    print(f"{project}\t{user}\t{new_group}\tCHANGED")
-                                else:
-                                    # If adding failed, print ERROR with details
-                                    print(f"{project}\t{user}\t{new_group}\tERROR: Failed to add to new group - {response.status_code}")
-                            else:
-                                # If removing failed, print ERROR with details
-                                print(f"{project}\t{user}\t{new_group}\tERROR: Failed to remove from old group - {response.status_code}")
-
-                        except requests.exceptions.RequestException as e:
-                            # If a request exception occurs, also append ERROR
-                            print(f"{project}\t{user}\t{new_group}\tERROR: Request exception - {e}")
-                    else:
-                        # If no change was needed, print the current group with NO CHANGE
-                        print(f"{project}\t{user}\t{new_group}\tNO CHANGE")
+                    groups_to_update.append((project, user, new_group))
 
         except FileNotFoundError:
             print(f"[ERROR] CSV file not found: {args.csv_file}")
+            return
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
+            return
 
+        # Iterate over each group and update it
+        for project, user, new_group in groups_to_update:
+            # Add to the new group using the correct endpoint
+            add_endpoint = f"/data/projects/{project}/users/{new_group}/{user}"
+            add_url = f"{args.url}{add_endpoint}"
+
+            try:
+                response = requests.put(add_url, auth=(args.auth, 'admin'), verify=False)
+
+                if response.status_code == 200:
+                    # Echo back the original input line and append CHANGED to {new_group}
+                    print(f"{project}\t{user}\t{new_group}\tCHANGED")
+                else:
+                    # If adding failed, print ERROR with details
+                    print(f"{project}\t{user}\t{new_group}\tERROR: Failed to add to new group - {response.status_code}")
+
+            except requests.exceptions.RequestException as e:
+                # If a request exception occurs, also append ERROR
+                print(f"{project}\t{user}\t{new_group}\tERROR: Request exception - {e}")
 
 
 def execute_list_project_accessibilities(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
