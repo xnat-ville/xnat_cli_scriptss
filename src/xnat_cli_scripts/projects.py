@@ -268,72 +268,52 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
     Update the accessibility of projects based on the CSV file.
     CSV Format: {project_id}{tab}{new_accessibility}
     The system checks the current accessibility in XNAT and updates it if necessary.
-    Echoes back the original input line and appends "UPDATED" or "ERROR".
+    Echoes back the original input line and appends "UPDATED", "ERROR", or "NO CHANGE".
     """
 
     if args.csv_file:
-        # Read the CSV file for project accessibility updates
-        projects_to_update = []
-
         try:
             with open(args.csv_file, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
                 for row in csv_reader:
-                    # Ensure the row contains both project ID and accessibility
                     if len(row) < 2:
                         continue
                     
-                    project_id = row[0].strip()  # Project ID
-                    new_accessibility = row[1].strip().lower()  # New accessibility (private, public, protected)
-                    
-                    # Only accept valid accessibility values
+                    project_id, new_accessibility = row[0].strip(), row[1].strip().lower()
+
                     if new_accessibility not in ['private', 'public', 'protected']:
                         print(f"[ERROR] Invalid accessibility '{new_accessibility}' for project {project_id}. Skipping.")
                         continue
-                    
-                    projects_to_update.append((project_id, new_accessibility))
+
+                    # Get current accessibility for the project (plain text)
+                    url = f"{args.url}/data/projects/{project_id}/accessibility"
+                    response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+
+                    if response.status_code == 200:
+                        current_accessibility = response.text.strip().lower()
+                    else:
+                        print(f"[ERROR] Could not fetch current accessibility for project '{project_id}'. Skipping.")
+                        continue
+
+                    if current_accessibility != new_accessibility:
+                        # Accessibility does not match, so update it
+                        endpoint = f"/data/projects/{project_id}/accessibility/{new_accessibility}"
+                        full_url = f"{args.url}{endpoint}"
+
+                        response = requests.put(full_url, auth=(args.auth, 'admin'), verify=False)
+
+                        if response.status_code == 200:
+                            print(f"{project_id}\t{new_accessibility}\tUPDATED")
+                        else:
+                            print(f"{project_id}\t{new_accessibility}\tERROR")
+                    else:
+                        # If no update was needed, print the current accessibility with NO CHANGE with a tab
+                        print(f"{project_id}\t{new_accessibility}\tNO CHANGE")
 
         except FileNotFoundError:
             print(f"[ERROR] CSV file not found: {args.csv_file}")
-            return
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
-            return
-
-        # Iterate over each project and update accessibility
-        for project_id, new_accessibility in projects_to_update:
-            # Get current accessibility for the project (plain text)
-            url = f"{args.url}/data/projects/{project_id}/accessibility"
-            response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
-
-            if response.status_code == 200:
-                current_accessibility = response.text.strip().lower()
-            else:
-                print(f"[ERROR] Could not fetch current accessibility for project '{project_id}'. Skipping.")
-                continue
-
-            if current_accessibility != new_accessibility:
-                # Accessibility does not match, so update it
-                endpoint = f"/data/projects/{project_id}/accessibility/{new_accessibility}"
-                full_url = f"{args.url}{endpoint}"
-
-                try:
-                    # Update the project accessibility via XNAT API
-                    response = requests.put(full_url, auth=(args.auth, 'admin'), verify=False)
-
-                    if response.status_code == 200:
-                        # Echo back the original input line and append UPDATED to {new_accessibility} with a tab
-                        print(f"{project_id}\t{new_accessibility}\tUPDATED")
-                    else:
-                        # If there's a failure, append ERROR with a tab
-                        print(f"{project_id}\t{new_accessibility}\tERROR")
-                
-                except requests.exceptions.RequestException as e:
-                    # If a request exception occurs, also append ERROR with a tab
-                    print(f"{project_id}\t{new_accessibility}\tERROR")
-            else:
-                # If no update was needed, print the current accessibility with NO CHANGE with a tab
-                print(f"{project_id}\t{new_accessibility}\tNO CHANGE")
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
