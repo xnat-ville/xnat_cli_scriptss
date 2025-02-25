@@ -21,6 +21,21 @@ import xnat.core
 import xnat.mixin
 from xnat.session import XNATSession
 import csv
+import time
+
+
+# Time Helper Function
+
+def apply_sleep(args: argparse.Namespace) -> None:
+    """ Applies sleep if -s is specified """
+    if args.sleep:
+        try:
+            sleep_time = float(args.sleep)
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+        except ValueError:
+            print("[ERROR] Invalid sleep value. Please provide a valid number.")
+
 
 def format_project_header_rows() -> str:
     return "ID\tName\tInsert Date\tSubject Count\tExperiment Count\PI"
@@ -65,19 +80,28 @@ def execute_list_projects(connection: xnat.session.XNATSession, args: argparse.N
             project_object = session.projects.get(project_id)
             if project_object:
                 print(format_project_data({}, project_object, args))
+                # Apply sleep after processing each project
+                apply_sleep(args)
     else:
         # List all projects as usual
         all_projects = session.get_json(f"/data/projects")
+        # Apply sleep after the REST call (moved up here)
+        apply_sleep(args)
+
         result_set = all_projects['ResultSet']
         result = result_set['Result']
 
         for project_json in result:
             project_object = session.projects[project_json['ID']]
             print(format_project_data(project_json, project_object, args))
+            # Apply sleep after processing each project
+            apply_sleep(args)
 
 
 def execute_list_project_users(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     all_projects = session.get_json(f"/data/projects")
+    # Apply sleep after the main REST call
+    apply_sleep(args)
 
     result_set = all_projects['ResultSet']
     result     = result_set['Result']
@@ -85,14 +109,25 @@ def execute_list_project_users(connection: xnat.session.XNATSession, args: argpa
     for project_json in result:
         project_object = session.projects[project_json['ID']]
         project_id = project_json['ID']
+
         users = connection.get_json(f"/data/projects/{project_id}/users")
+        # Apply sleep after fetching users for each project
+        apply_sleep(args)
+
         user_result_set = users['ResultSet']
         user_results    = user_result_set['Result']
+
         for user in user_results:
             print(f"{project_id}\t{user['login']}")
+        
+        # Apply sleep after processing each project's users
+        apply_sleep(args)
+
 
 def execute_list_project_groups(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     all_projects = session.get_json(f"/data/projects")
+    # Apply sleep after the main REST call
+    apply_sleep(args)
 
     result_set = all_projects['ResultSet']
     result     = result_set['Result']
@@ -111,11 +146,19 @@ def execute_list_project_groups(connection: xnat.session.XNATSession, args: argp
 
     for project_json in result:
         project_id = project_json['ID']
+
         users = connection.get_json(f"/data/projects/{project_id}/users")
+        # Apply sleep after fetching users for each project
+        apply_sleep(args)
+
         user_result_set = users['ResultSet']
         user_results    = user_result_set['Result']
+
         for user in user_results:
             print(f"{project_id}\t{user['login']}\t{user['GROUP_ID']}")
+        
+        # Apply sleep after processing each project's groups
+        apply_sleep(args)
 
 
 def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> None:
@@ -158,6 +201,9 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
 
             try:
                 response = requests.delete(full_url, auth=(args.auth, 'admin'), verify=False)
+                # Apply sleep after each REST call
+                apply_sleep(args)
+
                 if response.status_code == 200:
                     # Append REMOVED to the line if successful
                     print(f"{project}\t{user}\t{group}\tREMOVED")
@@ -167,6 +213,10 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
             except requests.exceptions.RequestException:
                 # If a request exception occurs, also append ERROR
                 print(f"{project}\t{user}\t{group}\tERROR")
+            
+            # Apply sleep after processing each line in the CSV
+            apply_sleep(args)
+
 
 def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> None:
     """
@@ -213,6 +263,8 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
 
             try:
                 response = requests.put(add_url, auth=(args.auth, 'admin'), verify=False)
+                # Apply sleep after each REST call
+                apply_sleep(args)
 
                 if response.status_code == 200:
                     # Echo back the original input line and append CHANGED to {new_group}
@@ -224,6 +276,9 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
             except requests.exceptions.RequestException as e:
                 # If a request exception occurs, also append ERROR
                 print(f"{project}\t{user}\t{new_group}\tERROR: Request exception - {e}")
+            
+            # Apply sleep after processing each line in the CSV
+            apply_sleep(args)
 
 
 def execute_list_project_accessibilities(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
@@ -242,6 +297,9 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
 
     # Get all projects
     all_projects = connection.get_json(f"/data/projects")
+    # Apply sleep after the main REST call
+    apply_sleep(args)
+
     result_set = all_projects['ResultSet']
     result = result_set['Result']
 
@@ -255,6 +313,8 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         # Get accessibility using requests directly since the endpoint returns plain text
         url = f"{args.url}/data/projects/{project_id}/accessibility"
         response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+        # Apply sleep after each REST call for accessibility
+        apply_sleep(args)
         
         if response.status_code == 200:
             accessibility = response.text.strip()  # Plain text response
@@ -262,6 +322,10 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
             accessibility = "Unknown"  # Fallback for error cases
         
         print(f"{project_id}\t{accessibility}")
+        
+        # Apply sleep after processing each project
+        apply_sleep(args)
+
 
 def execute_update_accessibilities(connection: XNATSession, args: argparse.Namespace) -> None:
     """
@@ -288,6 +352,8 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                     # Get current accessibility for the project (plain text)
                     url = f"{args.url}/data/projects/{project_id}/accessibility"
                     response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+                    # Apply sleep after each GET call for current accessibility
+                    apply_sleep(args)
 
                     if response.status_code == 200:
                         current_accessibility = response.text.strip().lower()
@@ -301,6 +367,8 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                         full_url = f"{args.url}{endpoint}"
 
                         response = requests.put(full_url, auth=(args.auth, 'admin'), verify=False)
+                        # Apply sleep after each PUT call for updating accessibility
+                        apply_sleep(args)
 
                         if response.status_code == 200:
                             print(f"{project_id}\t{new_accessibility}\tUPDATED")
@@ -309,6 +377,9 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                     else:
                         # If no update was needed, print the current accessibility with NO CHANGE with a tab
                         print(f"{project_id}\t{new_accessibility}\tNO CHANGE")
+                    
+                    # Apply sleep after processing each line in the CSV
+                    apply_sleep(args)
 
         except FileNotFoundError:
             print(f"[ERROR] CSV file not found: {args.csv_file}")
