@@ -168,7 +168,7 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
                 # If a request exception occurs, also append ERROR
                 print(f"{project}\t{user}\t{group}\tERROR")
 
-def execute_change_groups(connection: XNATSession, args: argparse.Namespace) -> None:
+def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> None:
     """
     Change groups specified in the CSV file.
     CSV Format: {project}{tab}{user}{tab}{new_group}
@@ -397,7 +397,7 @@ def execute_update_master(connection: xnat.session.XNATSession, args: argparse.N
     if args.update and args.groups:
         # If CSV is provided, use it for changing groups
         if args.csv_file:
-            execute_change_groups(connection, args)
+            execute_update_groups(connection, args)
         else:
             print("[WARNING] No CSV file provided. Please specify --csv for changing groups.")
         return  # Exit after changing groups
