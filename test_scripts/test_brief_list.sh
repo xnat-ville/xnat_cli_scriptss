@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Set PYTHONPATH to source code only (relative to the script's location)
-export PYTHONPATH="$1/../src"
+# Set PYTHONPATH one level up to include the parent directory
+export PYTHONPATH="$1/../"
 
 # Define Paths
 INPUT_CSV="/home.zfs/wustl/kadic/txt_files/input/projects.txt"
