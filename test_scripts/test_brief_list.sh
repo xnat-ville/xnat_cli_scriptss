@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Dynamically determine the project root directory
+# Dynamically determine the project root and src directory
 SCRIPT_DIR=$(dirname "$0")
-PROJECT_ROOT="$SCRIPT_DIR/.."
+SRC_DIR="$SCRIPT_DIR/../src"
 
-# Set PYTHONPATH to the project root
-export PYTHONPATH="$PROJECT_ROOT"
+# Set PYTHONPATH to both src and site-packages
+export PYTHONPATH="$SRC_DIR:/usr/local/lib/python3.9/site-packages"
 
-# Define Paths
+# Define Input and Output Paths
 INPUT_CSV="/home.zfs/wustl/kadic/txt_files/input/projects.txt"
 OUTPUT_FILE="/home.zfs/wustl/kadic/txt_files/output/projects_list.txt"
 
