@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Function to list projects in brief format
 # Arguments:
@@ -10,20 +10,19 @@ list_projects_brief() {
     # Dynamically set PYTHONPATH relative to the base folder
     export PYTHONPATH="$1/../src"
 
-    echo "Running brief list with command:"
-    echo python3 -m xnat_cli_scripts.projects $2 -L --brief --csv "$3"
-         python3 -m xnat_cli_scripts.projects $2 -L --brief --csv "$3" > "$4"
+    echo "Running brief list"
+    python3 -m xnat_cli_scripts.projects $2 -L --brief --csv "$3" > "$4" 2> /tmp/error_log.txt
 }
 
 # Set base folder and boilerplate arguments
-BASE_FOLDER=`dirname $0`
+BASE_FOLDER=$(dirname "$0")
 
-# Corrected Boiler Plate with HTTPS URL
-BOILER_PLATE=" -a admin -x https://cnda-dev-archive1.nrg.wustl.edu -e False "
+# Corrected Boiler Plate with HTTPS URL and Hardcoded Password
+BOILER_PLATE="-a kadic -x https://cnda-dev-archive1.nrg.wustl.edu -e False"
 
 # Define input and output files
-INPUT_FILE="/home.zfs/wustl/kadic/txt_files/input/projects.txt"
-OUTPUT_FILE="/home.zfs/wustl/kadic/txt_files/output/projects_list.txt"
+INPUT_FILE="/tmp/projects.txt"
+OUTPUT_FILE="/tmp/projects_list.txt"
 
 # Run the brief list function
 list_projects_brief "$BASE_FOLDER" "$BOILER_PLATE" "$INPUT_FILE" "$OUTPUT_FILE"
@@ -31,3 +30,4 @@ list_projects_brief "$BASE_FOLDER" "$BOILER_PLATE" "$INPUT_FILE" "$OUTPUT_FILE"
 # Confirm the output
 echo "Brief list output saved to $OUTPUT_FILE"
 ls -l "$OUTPUT_FILE"
+cat /tmp/error_log.txt
