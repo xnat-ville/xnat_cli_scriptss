@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Set PYTHONPATH one level up to include the parent directory
-export PYTHONPATH="$1/../"
+# Dynamically determine the project root directory
+SCRIPT_DIR=$(dirname "$0")
+PROJECT_ROOT="$SCRIPT_DIR/.."
+
+# Set PYTHONPATH to the project root
+export PYTHONPATH="$PROJECT_ROOT"
 
 # Define Paths
 INPUT_CSV="/home.zfs/wustl/kadic/txt_files/input/projects.txt"
