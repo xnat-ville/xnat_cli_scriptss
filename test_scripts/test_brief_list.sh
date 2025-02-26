@@ -1,22 +1,33 @@
-#!/bin/bash
+#!/bin/sh
 
-# Dynamically determine the project root and src directory
-SCRIPT_DIR=$(dirname "$0")
-SRC_DIR="$SCRIPT_DIR/../src"
+# Function to list projects in brief format
+# Arguments:
+#   $1 - Base Folder (to set PYTHONPATH)
+#   $2 - Boiler Plate arguments
+#   $3 - CSV Input File
+#   $4 - Output File
+list_projects_brief() {
+    # Dynamically set PYTHONPATH relative to the base folder
+    export PYTHONPATH="$1/../src"
 
-# Set PYTHONPATH to both src and site-packages
-export PYTHONPATH="$SRC_DIR:/usr/local/lib/python3.9/site-packages"
+    echo "Running brief list with command:"
+    echo python3 -m xnat_cli_scripts.projects $2 -L --brief --csv "$3"
+         python3 -m xnat_cli_scripts.projects $2 -L --brief --csv "$3" > "$4"
+}
 
-# Define Input and Output Paths
-INPUT_CSV="/home.zfs/wustl/kadic/txt_files/input/projects.txt"
+# Set base folder and boilerplate arguments
+BASE_FOLDER=`dirname $0`
+
+# Corrected Boiler Plate with HTTPS URL
+BOILER_PLATE=" -a admin -x https://cnda-dev-archive1.nrg.wustl.edu -e False "
+
+# Define input and output files
+INPUT_FILE="/home.zfs/wustl/kadic/txt_files/input/projects.txt"
 OUTPUT_FILE="/home.zfs/wustl/kadic/txt_files/output/projects_list.txt"
 
-# Run the Python script for the brief list
-python3 -m xnat_cli_scripts.projects --L --brief --csv "$INPUT_CSV" > "$OUTPUT_FILE"
+# Run the brief list function
+list_projects_brief "$BASE_FOLDER" "$BOILER_PLATE" "$INPUT_FILE" "$OUTPUT_FILE"
 
-# Check if the output file was created and display a success message
-if [[ -f "$OUTPUT_FILE" ]]; then
-    echo "Brief list output saved to $OUTPUT_FILE"
-else
-    echo "[ERROR] Failed to generate brief list output."
-fi
+# Confirm the output
+echo "Brief list output saved to $OUTPUT_FILE"
+ls -l "$OUTPUT_FILE"
