@@ -18,7 +18,7 @@ list_projects_brief() {
 BASE_FOLDER=$(dirname "$0")
 
 # Corrected Boiler Plate with HTTPS URL and Hardcoded Password
-BOILER_PLATE="-a kadic -x https://cnda-dev-archive1.nrg.wustl.edu -e False"
+BOILER_PLATE="-a kadic -x https://cnda-dev-archive1.nrg.wustl.edu"
 
 # Define input and output files
 INPUT_FILE="/tmp/projects.txt"
