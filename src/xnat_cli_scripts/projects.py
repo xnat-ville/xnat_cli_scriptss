@@ -297,8 +297,8 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
 
 def execute_list_project_accessibilities(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     """
-    Lists project accessibilities (private/public/protected)
-    Output format: {project}{tab}{accessibility}
+    Lists project accessibilities (private/public/protected).
+    Output format: {project}{tab}{accessibility}.
     """
     project_ids = []
 
@@ -324,21 +324,23 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         if args.csv_file and project_id not in project_ids:
             continue
 
-        # Get accessibility using requests directly since the endpoint returns plain text
+        # Get accessibility (plain text) using requests directly
         url = f"{args.url}/data/projects/{project_id}/accessibility"
         response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
         # Apply sleep after each REST call for accessibility
         apply_sleep(args)
-        
+
         if response.status_code == 200:
-            accessibility = response.text.strip()  # Plain text response
+            accessibility = response.text.strip()  # Now treating it as plain text
         else:
             accessibility = "Unknown"  # Fallback for error cases
-        
+
+        # Print the project ID and its accessibility
         print(f"{project_id}\t{accessibility}")
         
         # Apply sleep after processing each project
         apply_sleep(args)
+
 
 
 def execute_update_accessibilities(connection: XNATSession, args: argparse.Namespace) -> None:
