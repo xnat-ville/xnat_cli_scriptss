@@ -217,7 +217,7 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
             full_url = f"{args.url}{endpoint}"  # Using args.url to construct the full URL
 
             try:
-                response = requests.delete(full_url, auth=(args.auth, 'admin'), verify=False)
+                response = requests.put(url, auth=(args.auth, args.password), verify=False)
                 # Apply sleep after each REST call
                 apply_sleep(args)
 
@@ -279,7 +279,7 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
             add_url = f"{args.url}{add_endpoint}"
 
             try:
-                response = requests.put(add_url, auth=(args.auth, 'admin'), verify=False)
+                response = requests.put(url, auth=(args.auth, args.password), verify=False)
                 # Apply sleep after each REST call
                 apply_sleep(args)
 
@@ -333,7 +333,7 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
 
         # Get accessibility using requests directly (plain text response)
         url = f"{args.url}/data/projects/{project_id}/accessibility"
-        # Authenticate using args.auth and args.password (no hardcoded 'admin' anymore)
+        
         response = requests.get(url, auth=(args.auth, args.password), verify=False)
 
         # Apply sleep after each REST call for accessibility
@@ -377,7 +377,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
 
                     # Get current accessibility for the project (plain text)
                     url = f"{args.url}/data/projects/{project_id}/accessibility"
-                    response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+                    response = requests.put(url, auth=(args.auth, args.password), verify=False)
                     # Apply sleep after each GET call for current accessibility
                     apply_sleep(args)
 
@@ -392,7 +392,7 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                         endpoint = f"/data/projects/{project_id}/accessibility/{new_accessibility}"
                         full_url = f"{args.url}{endpoint}"
 
-                        response = requests.put(full_url, auth=(args.auth, 'admin'), verify=False)
+                        response = requests.put(url, auth=(args.auth, args.password), verify=False)
                         # Apply sleep after each PUT call for updating accessibility
                         apply_sleep(args)
 
