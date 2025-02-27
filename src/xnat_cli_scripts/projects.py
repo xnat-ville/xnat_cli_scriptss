@@ -324,7 +324,7 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         if args.csv_file and project_id not in project_ids:
             continue
 
-        # Get accessibility using the correct function (plain text response)
+        # Get accessibility using requests directly (plain text response)
         url = f"{args.url}/data/projects/{project_id}/accessibility"
         response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
         
@@ -332,7 +332,7 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         apply_sleep(args)
 
         if response.status_code == 200:
-            accessibility = response.text.strip().lower()  # Process response as plain text
+            accessibility = response.text.strip()  # Ensure plain text handling (no JSON parsing)
         else:
             accessibility = "Unknown"  # Fallback for error cases
 
@@ -341,6 +341,7 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         
         # Apply sleep after processing each project
         apply_sleep(args)
+
 
 def execute_update_accessibilities(connection: XNATSession, args: argparse.Namespace) -> None:
     """
@@ -534,7 +535,7 @@ if __name__ == "__main__":
 #    password = "admin"
  
     # session = xnat.connect(args.url, user=args.auth, password=password, extension_types=False)
-    session = xnat.connect(args.url, extension_types=False, user=args.auth)
+    session = xnat.connect(args.url, extension_types=False, user=args.auth, password=password)
 
 if args.list:
     execute_list_master(session, args)
