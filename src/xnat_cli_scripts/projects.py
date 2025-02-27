@@ -324,14 +324,15 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         if args.csv_file and project_id not in project_ids:
             continue
 
-        # Get accessibility (plain text) using requests directly
+        # Get accessibility using the correct function (plain text response)
         url = f"{args.url}/data/projects/{project_id}/accessibility"
         response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+        
         # Apply sleep after each REST call for accessibility
         apply_sleep(args)
 
         if response.status_code == 200:
-            accessibility = response.text.strip()  # Now treating it as plain text
+            accessibility = response.text.strip().lower()  # Process response as plain text
         else:
             accessibility = "Unknown"  # Fallback for error cases
 
@@ -340,8 +341,6 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         
         # Apply sleep after processing each project
         apply_sleep(args)
-
-
 
 def execute_update_accessibilities(connection: XNATSession, args: argparse.Namespace) -> None:
     """
