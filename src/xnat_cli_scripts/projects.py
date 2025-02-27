@@ -536,7 +536,7 @@ if __name__ == "__main__":
 #    password = "admin"
  
     # session = xnat.connect(args.url, user=args.auth, password=password, extension_types=False)
-    session = xnat.connect(args.url, extension_types=False, user=args.auth, password=password)
+    session = xnat.connect(args.url, extension_types=False, user=args.auth, password=args.password)
 
 if args.list:
     execute_list_master(session, args)
