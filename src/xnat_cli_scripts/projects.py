@@ -98,7 +98,18 @@ def execute_list_projects(connection: xnat.session.XNATSession, args: argparse.N
             apply_sleep(args)
 
 
+import csv
+
 def execute_list_project_users(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
+    # Check if CSV file is provided
+    if args.csv:
+        # Read the CSV file and get the list of project IDs
+        with open(args.csv, mode='r') as file:
+            csv_reader = csv.reader(file)
+            project_ids_from_csv = {row[0] for row in csv_reader}  # Assuming project IDs are in the first column
+    else:
+        project_ids_from_csv = None
+
     all_projects = session.get_json(f"/data/projects")
     # Apply sleep after the main REST call
     apply_sleep(args)
@@ -107,8 +118,11 @@ def execute_list_project_users(connection: xnat.session.XNATSession, args: argpa
     result     = result_set['Result']
 
     for project_json in result:
-        project_object = session.projects[project_json['ID']]
         project_id = project_json['ID']
+
+        # If CSV is provided, only process projects in the CSV file
+        if project_ids_from_csv and project_id not in project_ids_from_csv:
+            continue
 
         users = connection.get_json(f"/data/projects/{project_id}/users")
         # Apply sleep after fetching users for each project
