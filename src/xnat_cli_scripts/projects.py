@@ -98,13 +98,11 @@ def execute_list_projects(connection: xnat.session.XNATSession, args: argparse.N
             apply_sleep(args)
 
 
-import csv
-
 def execute_list_project_users(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     # Check if CSV file is provided
-    if args.csv:
+    if args.csv_file:  # Correctly reference args.csv_file
         # Read the CSV file and get the list of project IDs
-        with open(args.csv, mode='r') as file:
+        with open(args.csv_file, mode='r') as file:
             csv_reader = csv.reader(file)
             project_ids_from_csv = {row[0] for row in csv_reader}  # Assuming project IDs are in the first column
     else:
@@ -115,7 +113,7 @@ def execute_list_project_users(connection: xnat.session.XNATSession, args: argpa
     apply_sleep(args)
 
     result_set = all_projects['ResultSet']
-    result     = result_set['Result']
+    result = result_set['Result']
 
     for project_json in result:
         project_id = project_json['ID']
@@ -136,6 +134,7 @@ def execute_list_project_users(connection: xnat.session.XNATSession, args: argpa
         
         # Apply sleep after processing each project's users
         apply_sleep(args)
+
 
 
 def execute_list_project_groups(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
