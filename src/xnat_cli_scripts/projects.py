@@ -309,8 +309,9 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
     if args.csv_file:
         with open(args.csv_file, mode='r') as file:
             csv_reader = csv.reader(file, delimiter='\t')
-            for row in csv_reader:
-                project_ids.append(row[0])  # Assuming project ID is in the first column
+            project_ids_from_csv = [row[0].strip() for row in csv_reader if row]  # Handle empty rows
+    else:
+        project_ids_from_csv = None
 
     # Get all projects
     all_projects = connection.get_json(f"/data/projects")
@@ -321,15 +322,18 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
     result = result_set['Result']
 
     for project_json in result:
-        project_id = project_json['ID']
+        project_id = project_json.get('ID', None)
+        if not project_id:
+            print(f"[ERROR] Missing 'ID' for project: {project_json}")
+            continue
 
         # If CSV is used, check if the project is in the CSV list
-        if args.csv_file and project_id not in project_ids:
+        if args.csv_file and project_id not in project_ids_from_csv:
             continue
 
         # Get accessibility using requests directly (plain text response)
         url = f"{args.url}/data/projects/{project_id}/accessibility"
-        response = requests.get(url, auth=(args.auth, 'admin'), verify=False)
+        response = requests.get(url, auth=(args.auth, 'admin'), verify=False)  # Keep verify=False to avoid SSL warnings
         
         # Apply sleep after each REST call for accessibility
         apply_sleep(args)
@@ -337,13 +341,15 @@ def execute_list_project_accessibilities(connection: xnat.session.XNATSession, a
         if response.status_code == 200:
             accessibility = response.text.strip()  # Ensure plain text handling (no JSON parsing)
         else:
-            accessibility = "Unknown"  # Fallback for error cases
+            print(f"[ERROR] Failed to retrieve accessibility for {project_id}: {response.status_code}")
+            accessibility = "Unknown"
 
         # Print the project ID and its accessibility
         print(f"{project_id}\t{accessibility}")
-        
+
         # Apply sleep after processing each project
         apply_sleep(args)
+
 
 
 def execute_update_accessibilities(connection: XNATSession, args: argparse.Namespace) -> None:
