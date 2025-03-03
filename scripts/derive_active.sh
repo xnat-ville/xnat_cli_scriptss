@@ -13,8 +13,15 @@ list_projects_brief() {
 }
 
 
+# Main starts here
+
+ cnda_user="smoore"
+ if [ $# -ne 0 ] ; then
+  cnda_user="$1"
+ fi
+
  BASE_FOLDER=`dirname $0`
- BOILER_PLATE=" -a smoore -x https://cnda-dev-archive1.nrg.wustl.edu -e False "
+ BOILER_PLATE=" -a $cnda_user -x https://cnda-dev-archive1.nrg.wustl.edu -e False "
 
  list_projects_brief "$BASE_FOLDER" "$BOILER_PLATE" NA-user /tmp/projects_brief.txt
  sort /tmp/projects_brief.txt | uniq > /tmp/all_projects_sorted.txt
@@ -24,4 +31,3 @@ list_projects_brief() {
  cat /tmp/delta_projects.txt | grep "^< " | sed -e 's/^< //' > test_data/active_projects.txt
 
  wc -l test_data/inactive_projects.txt test_data/active_projects.txt
-
