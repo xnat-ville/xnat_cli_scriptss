@@ -183,21 +183,20 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
     """
     Remove groups specified in the CSV file.
     CSV Format: {project}{tab}{user}{tab}{group}
-    This version removes the specified groups and appends "REMOVED" or "ERROR" to each line.
+    Appends "REMOVED" or "ERROR" to each line.
     """
-    
+
     if args.csv_file:
-        # Read the CSV file for groups to remove
         groups_to_remove = []
 
         try:
             with open(args.csv_file, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
                 for row in csv_reader:
-                    # Verify row length and content
                     if len(row) < 3:
+                        print(f"[ERROR] Invalid row format: {row}. Skipping.")
                         continue
-                    
+
                     project = row[0].strip()  # Project ID
                     user = row[1].strip()     # User
                     group = row[2].strip()    # Group to be removed
@@ -213,29 +212,25 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
 
         # Iterate over each group and remove it
         for project, user, group in groups_to_remove:
-            # XNAT API Call for group removal
-            endpoint = f"/data/projects/{project}/users/{group}/{user}"
-            full_url = f"{args.url}{endpoint}"  # Using args.url to construct the full URL
+            # Construct the URL for removing the group (same style as execute_update_groups)
+            remove_url = f"/data/projects/{project}/users/{group}/{user}"
 
             try:
-                response = requests.put(url, auth=(args.auth, args.password), verify=False)
-                # Apply sleep after each REST call
-                apply_sleep(args)
+                # Use `connection.put()` instead of `requests.put()`
+                response = connection.put(remove_url)
+
+                apply_sleep(args)  # Sleep after each API call
 
                 if response.status_code == 200:
-                    # Append REMOVED to the line if successful
                     print(f"{project}\t{user}\t{group}\tREMOVED")
                 else:
-                    # Append ERROR to the line if failed
-                    print(f"{project}\t{user}\t{group}\tERROR")
-            except requests.exceptions.RequestException:
-                # If a request exception occurs, also append ERROR
-                print(f"{project}\t{user}\t{group}\tERROR")
-            
-            # Apply sleep after processing each line in the CSV
-            apply_sleep(args)
+                    print(f"{project}\t{user}\t{group}\tERROR\t{response.status_code}: {response.text}")
 
-import csv
+            except requests.exceptions.RequestException as e:
+                print(f"{project}\t{user}\t{group}\tERROR\tRequest failed: {e}")
+
+            apply_sleep(args)  # Sleep after processing each row
+
 
 def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> None:
     """
@@ -278,8 +273,6 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
             print(f"[ERROR] CSV file not found: {args.csv_file}")
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
-
-
 
 
 def execute_list_project_accessibilities(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
