@@ -333,13 +333,12 @@ def execute_list_project_accessibilities(connection: XNATSession, args: argparse
         apply_sleep(args)  # Sleep after processing each project
 
 
-
 def execute_update_accessibilities(connection: XNATSession, args: argparse.Namespace) -> None:
     """
     Update the accessibility of projects based on the CSV file.
     CSV Format: {project_id}{tab}{new_accessibility}
-    The system checks the current accessibility in XNAT and updates it if necessary.
-    Echoes back the original input line and appends "UPDATED", "ERROR", or "NO CHANGE".
+    The function directly updates the accessibility without checking the current state.
+    Echoes back the original input line and appends "UPDATED" or "ERROR".
     """
 
     if args.csv_file:
@@ -356,44 +355,23 @@ def execute_update_accessibilities(connection: XNATSession, args: argparse.Names
                         print(f"[ERROR] Invalid accessibility '{new_accessibility}' for project {project_id}. Skipping.")
                         continue
 
-                    # Get current accessibility for the project (plain text)
-                    url = f"{args.url}/data/projects/{project_id}/accessibility"
-                    response = requests.get(url, auth=(args.auth, args.password), verify=False)
+                    # Directly update the accessibility (no checking of current state)
+                    endpoint = f"/data/projects/{project_id}/accessibility/{new_accessibility}"
+                    response = connection.put(endpoint)
 
-                    # Apply sleep after each GET call for current accessibility
-                    apply_sleep(args)
+                    apply_sleep(args)  # Sleep after PUT call
 
                     if response.status_code == 200:
-                        current_accessibility = response.text.strip().lower()
+                        print(f"{project_id}\t{new_accessibility}\tUPDATED")
                     else:
-                        print(f"[ERROR] Could not fetch current accessibility for project '{project_id}'. Skipping.")
-                        continue
+                        print(f"{project_id}\t{new_accessibility}\tERROR\t{response.status_code}: {response.text}")
 
-                    if current_accessibility != new_accessibility:
-                        # Accessibility does not match, so update it
-                        endpoint = f"/data/projects/{project_id}/accessibility/{new_accessibility}"
-                        full_url = f"{args.url}{endpoint}"
-
-                        response = requests.put(full_url, auth=(args.auth, args.password), verify=False)
-                        # Apply sleep after each PUT call for updating accessibility
-                        apply_sleep(args)
-
-                        if response.status_code == 200:
-                            print(f"{project_id}\t{new_accessibility}\tUPDATED")
-                        else:
-                            print(f"{project_id}\t{new_accessibility}\tERROR")
-                    else:
-                        # If no update was needed, print the current accessibility with NO CHANGE with a tab
-                        print(f"{project_id}\t{new_accessibility}\tNO CHANGE")
-                    
-                    # Apply sleep after processing each line in the CSV
-                    apply_sleep(args)
+                    apply_sleep(args)  # Sleep after processing each CSV line
 
         except FileNotFoundError:
             print(f"[ERROR] CSV file not found: {args.csv_file}")
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
-
 
 
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
