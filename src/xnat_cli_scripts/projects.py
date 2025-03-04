@@ -142,8 +142,6 @@ def execute_list_project_users(connection: xnat.session.XNATSession, args: argpa
         apply_sleep(args)
 
 
-
-
 def execute_list_project_groups(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     all_projects = session.get_json(f"/data/projects")
     # Apply sleep after the main REST call
@@ -237,18 +235,24 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
             # Apply sleep after processing each line in the CSV
             apply_sleep(args)
 
+import csv
+
 def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> None:
     """
-    Update groups for users in the specified projects based on the CSV file.
+    Force update groups for users in the specified projects based on the CSV file.
+    Uses XNATSession for authentication exactly like list_project_groups.
+
     CSV Format: {project_id}{tab}{user}{tab}{new_group}
-    The system checks the current group and updates it if necessary.
+    
     Echoes back the original input line and appends:
-      - "CHANGED", "ERROR", or "NO CHANGE".
+      - "CHANGED" if the request succeeds
+      - "ERROR" if the request fails
     """
     if args.csv_file:
         try:
             with open(args.csv_file, mode='r') as file:
                 csv_reader = csv.reader(file, delimiter='\t')
+                
                 for row in csv_reader:
                     if len(row) < 3:
                         print(f"[ERROR] Invalid row format: {row}. Skipping.")
@@ -256,45 +260,26 @@ def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> 
                     
                     project_id, user, new_group = row[0].strip(), row[1].strip(), row[2].strip()
 
-                    # Construct the URL using the base URL from args.url
-                    url = f"{args.url}/data/projects/{project_id}/users/{user}"
+                    # Construct the URL for updating the group (relative path)
+                    update_url = f"/data/projects/{project_id}/users/{new_group}/{user}"
 
-                    # Get current groups for the user
-                    response = requests.get(url, auth=(args.auth, args.password), verify=False)
+                    # Use XNATSession for authentication, just like list_project_groups
+                    response = connection.put(update_url)  
 
-                    apply_sleep(args)
+                    apply_sleep(args)  # Keeps delay between API calls
 
+                    # Check response and print result
                     if response.status_code == 200:
-                        # The response is in JSON format, so let's extract the groups
-                        current_groups = response.json().get("ResultSet", {}).get("Result", [])
-                        
-                        # Extract all current group IDs for the user
-                        current_group_list = [group['GROUP_ID'] for group in current_groups]
-
-                        # Check if the user is already in the new group
-                        if new_group not in current_group_list:
-                            # Add user to the new group (if not already a member)
-                            add_url = f"{args.url}/data/projects/{project_id}/users/{new_group}/{user}"
-                            add_response = requests.put(add_url, auth=(args.auth, args.password), verify=False)
-
-                            apply_sleep(args)
-
-                            if add_response.status_code == 200:
-                                print(f"{project_id}\t{user}\t{new_group}\tCHANGED")
-                            else:
-                                print(f"{project_id}\t{user}\t{new_group}\tERROR")
-                        else:
-                            print(f"{project_id}\t{user}\t{new_group}\tNO CHANGE")
+                        print(f"{project_id}\t{user}\t{new_group}\tCHANGED")
                     else:
-                        print(f"[ERROR] Could not fetch current groups for {user} in project '{project_id}'. Skipping.")
-                        continue
-
-                    apply_sleep(args)
+                        print(f"{project_id}\t{user}\t{new_group}\tERROR\t{response.status_code}: {response.text}")
 
         except FileNotFoundError:
             print(f"[ERROR] CSV file not found: {args.csv_file}")
         except Exception as e:
             print(f"[ERROR] Exception while reading CSV: {e}")
+
+
 
 
 def execute_list_project_accessibilities(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
