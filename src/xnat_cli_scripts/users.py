@@ -20,6 +20,7 @@ from time import sleep
 import xnat
 import xnat.core
 import xnat.mixin
+import xnat_cli_scripts.cli_common
 
 def execute_list_user_projects(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     target_user = args.target_user
@@ -47,48 +48,22 @@ def execute_list_user_groups(connection: xnat.session.XNATSession, args: argpars
     user_groups = connection.get_json(f"/xapi/users/{target_user}/groups")
     index = 1
     group_length = len(user_groups)
-    float_sleep = 0.0
-    if (args.sleep is not None):
-        float_sleep = float(args.sleep)
 
     tab = "\t"
     for x_group in user_groups:
         if args.verbose:
-            print(f"{index}{tab}{group_length}{tab}{target_user}{tab}{x_group}")
+            print(f"{index}{tab}{target_user}{tab}{x_group}")
             index += 1
         else:
             print(f"{target_user}{tab}{x_group}")
 
-        sleep(float_sleep)
-
-def execute_list_user_roles(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
-    target_user = args.target_user
-    user_roles = connection.get_json(f"/xapi/users/{target_user}/roles")
-    index = 1
-    role_length = len(user_roles)
-    float_sleep = 0.0
-    if (args.sleep is not None):
-        float_sleep = float(args.sleep)
-
-    tab = "\t"
-    for x_role in user_roles:
-        if args.verbose:
-            print(f"{index}{tab}{role_length}{tab}{target_user}{tab}{x_role}")
-            index += 1
-        else:
-            print(f"{target_user}{tab}{x_role}")
-
-        sleep(float_sleep)
-
 def execute_list_master(connection: xnat.session.XNATSession, args: argparse.Namespace) -> None:
     if (args.projects):
         execute_list_user_projects(connection, args)
-    elif (args.roles):
-        execute_list_user_roles(connection, args)
     elif (args.groups):
         execute_list_user_groups(connection, args)
     else:
-        print("Request to list requires --groups, --projects or --roles")
+        print("Request to list requires --groups or --projects")
 
 
 def remove_user_group(user: str, group: str, sleep_time: float, verbose: bool) -> None:
@@ -141,6 +116,7 @@ if __name__ == "__main__":
     ## XNAT user/login information
     parser.add_argument('-x', '--xnat',            dest='url',             help="URL to XNAT, default is https://cnda.wustl.edu")
     parser.add_argument('-a', '--auth',            dest='user',            help="User authentication/login for access to XNAT", required=True)
+    parser.add_argument('-p', '--password',        dest='password',        help="Password for XNAT authentication", required=False)
     parser.add_argument('-e', '--extension_types', dest='extension_types', help="True or False for extension_types in xnat.connect")
 
     ## These are operations
@@ -149,9 +125,8 @@ if __name__ == "__main__":
     parser.add_argument('-R', '--remove',          dest='remove',          help='Remove role(s) this user',      action='store_true')
 
     # These are objects of the operations; they regulate the action
-    parser.add_argument('-p', '--projects',        dest='projects',        help='Verb object: Projects',         action='store_true')
+    parser.add_argument('-P', '--projects',        dest='projects',        help='Verb object: Projects',         action='store_true')
     parser.add_argument('-g', '--groups',          dest='groups',          help='Verb object: Groups',           action='store_true')
-    parser.add_argument('-r', '--roles',           dest='roles',           help='Verb object: Roles',            action='store_true')
     parser.add_argument('-c', '--csv',             dest='csv_file',        help="CSV file with list of objects (projects, roles, ...) for operations")
     parser.add_argument('-t', '--target_user',     dest='target_user',     help='Target user: Operations performed on the target')
 
@@ -170,10 +145,12 @@ if __name__ == "__main__":
     args.url = "https://cnda.wustl.edu" if args.url is None else args.url
     args.extension_types = False if args.extension_types is None else args.extension_types
 
-    password = None
-    password="admin"
+    auth_user=xnat_cli_scripts.cli_common.extract_auth_user(args)
+    auth_password=xnat_cli_scripts.cli_common.extract_auth_password(args)
+    xnat_extensions=xnat_cli_scripts.cli_common.extract_extension_types(args)
+
     args.extension_types = "True" if args.extension_types is None else args.extension_types
-    connection = xnat.connect(args.url, user=args.user, password=password, extension_types=False)
+    connection = xnat.connect(args.url, user=auth_user, password=auth_password, extension_types=xnat_extensions)
 
     if args.list:
         execute_list_master(connection, args)
