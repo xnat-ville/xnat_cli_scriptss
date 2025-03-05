@@ -20,7 +20,7 @@ def extract_auth_password(args: argparse.Namespace) -> Union[str,None]:
     auth_password=None
 
     if len(auth_tokens) > 1:
-        auth_password = auth_tokens
+        auth_password = auth_tokens[1]
     elif args.password is not None:
         auth_password = args.password
 
