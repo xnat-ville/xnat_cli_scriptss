@@ -495,16 +495,15 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose',         dest='verbose',                  help="Verbose mode",                               action='store_true')
     parser.add_argument('--csv',                   dest='csv_file',                 help='Path to CSV file operations such as listing, removing, or changing groups')
     
-    args = parser.parse_args()
+args = parser.parse_args()
 
-    args.url = "http://localhost" if args.url is None else args.url
+args.url = "https://cnda.wustl.edu" if args.url is None else args.url
 
-#    print(args.extension_types)
+auth_user = xnat_cli_scripts.cli_common.extract_auth_user(args)
+auth_password = xnat_cli_scripts.cli_common.extract_auth_password(args)
+xnat_extensions = xnat_cli_scripts.cli_common.extract_extension_types(args)
 
-#    password = "admin"
- 
-    # session = xnat.connect(args.url, user=args.auth, password=password, extension_types=False)
-    session = xnat.connect(args.url, extension_types=False, user=args.auth, password=args.password)
+session = xnat.connect(args.url, user=auth_user, password=auth_password, extension_types=xnat_extensions)
 
 if args.list:
     execute_list_master(session, args)
@@ -515,10 +514,10 @@ elif args.update:
 else:
     print("[ERROR] No valid action specified. Use -L, -R, or --update.")
 
-
 #    execute_project_list(session, args)
 #    execute_subject_list(session, args)
 #    execute_session_list(session, args)
 
-    session.disconnect()
+session.disconnect()
+
 
