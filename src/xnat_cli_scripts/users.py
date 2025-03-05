@@ -143,13 +143,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.url = "https://cnda.wustl.edu" if args.url is None else args.url
-    args.extension_types = False if args.extension_types is None else args.extension_types
-
+   
     auth_user=xnat_cli_scripts.cli_common.extract_auth_user(args)
     auth_password=xnat_cli_scripts.cli_common.extract_auth_password(args)
     xnat_extensions=xnat_cli_scripts.cli_common.extract_extension_types(args)
 
-    args.extension_types = "True" if args.extension_types is None else args.extension_types
     connection = xnat.connect(args.url, user=auth_user, password=auth_password, extension_types=xnat_extensions)
 
     if args.list:
