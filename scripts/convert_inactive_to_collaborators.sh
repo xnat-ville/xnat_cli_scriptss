@@ -9,7 +9,7 @@ update_projects_groups() {
     export PYTHONPATH="$1/../src"
 
     echo python3 -m xnat_cli_scripts.projects $2 --update --groups
-    python3 -m xnat_cli_scripts.projects $2 --update --groups > "$3"
+         python3 -m xnat_cli_scripts.projects $2 --update --groups > "$3"
 }
 
 # Main starts here
