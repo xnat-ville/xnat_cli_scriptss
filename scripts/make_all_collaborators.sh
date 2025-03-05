@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # Arguments:
 #              Base Folder
 #              Boiler Plate
@@ -29,5 +28,4 @@ url=$(get_xnat_url)
 
 BOILER_PLATE=" -a $auth_string -x $url -e False "
 
-update_projects_groups "$BASE_FOLDER" "$BOILER_PLATE --csv test_data/inactive_project_collaborators
-
+update_projects_groups "$BASE_FOLDER" "$BOILER_PLATE --csv test_data/inactive_project_collaborators.txt" test_data/inactive_project_groups_update.txt\
