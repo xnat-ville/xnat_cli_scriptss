@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Arguments:
 #              Base Folder
 #              Boiler Plate
@@ -36,4 +37,3 @@ diff /tmp/all_projects_sorted.txt /tmp/inactive_sorted.txt > /tmp/delta_projects
 grep "^< " /tmp/delta_projects.txt | sed -e 's/^< //' > test_data/active_projects.txt
 
 wc -l test_data/inactive_projects.txt test_data/active_projects.txt
-
