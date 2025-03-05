@@ -229,9 +229,6 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
             except requests.exceptions.RequestException as e:
                 print(f"{project}\t{user}\t{group}\tERROR\tRequest failed: {e}")
 
-            apply_sleep(args)  # Sleep after processing each row
-
-
 def execute_update_groups(connection: XNATSession, args: argparse.Namespace) -> None:
     """
     Force update groups for users in the specified projects based on the CSV file.
