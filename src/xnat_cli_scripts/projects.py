@@ -217,7 +217,7 @@ def execute_remove_groups(connection: XNATSession, args: argparse.Namespace) -> 
 
             try:
                 # Use `connection.put()` instead of `requests.put()`
-                response = connection.put(remove_url)
+                response = connection.delete(remove_url)
 
                 apply_sleep(args)  # Sleep after each API call
 
