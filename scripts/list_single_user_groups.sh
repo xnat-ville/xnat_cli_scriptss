@@ -6,6 +6,7 @@
 #              Boiler Plate
 #              User ID
 #              Output file
+
 list_groups() {
  export PYTHONPATH="$1/../src"
  echo PYTHONPATH $PYTHONPATH

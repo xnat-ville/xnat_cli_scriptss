@@ -4,6 +4,7 @@
 #              Base Folder
 #              Boiler Plate
 #              Output file
+
 list_projects_groups() {
   export PYTHONPATH="$1/../src"
 
