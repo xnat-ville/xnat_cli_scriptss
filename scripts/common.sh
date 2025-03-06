@@ -4,6 +4,7 @@
 
 # Returns the URL of the XNAT that is the target of a function.
 # Maps input key to a value
+# EXISTING
 # PRODUCTION-COPY
 # PRODUCTION-LIVE
 # DEV-COPY
@@ -14,6 +15,10 @@ get_xnat_url() {
  url=""
 
  case "$1" in
+  # Todo: Need to fix this
+  "EXISTING")
+   url="https://cnda-gold.nrg.wustl.edu";;
+
   "PRODUCTION-COPY")
    url="https://cnda-gold.nrg.wustl.edu";;
 
@@ -32,7 +37,7 @@ get_xnat_url() {
 
   *)
    >&2 echo "get_xnat_url does not recognize input key: $1"
-   >&2 echo "Should be one of: PRODUCTION-COPY, PRODUCTION-LIVE, DEV-COPY, DEV-LIVE, LOCALHOST"
+   >&2 echo "Should be one of: EXISTING, PRODUCTION-COPY, PRODUCTION-LIVE, DEV-COPY, DEV-LIVE, LOCALHOST"
    return 1 ;;
  esac
 
