@@ -19,12 +19,13 @@ get_xnat_url() {
   "EXISTING")
    url="https://cnda-dev-archive1.nrg.wustl.edu";;
 
+  # Todo: Need to fix this (cnda-gold.wustl.edu)
   "PRODUCTION-COPY")
-   url="https://cnda-gold.nrg.wustl.edu";;
+   url="https://cnda-dev-archive1.nrg.wustl.edu";;
 
-  # Todo: Need to fix this
+  # Todo: Need to fix this (cnda.wustl.edu)
   "PRODUCTION-LIVE")
-   url="https://cnda-gold.nrg.wustl.edu";;
+   url="https://cnda-dev-archive1.nrg.wustl.edu";;
 
   "DEV-COPY")
    url="https://cnda-dev-archive1.nrg.wustl.edu";;
