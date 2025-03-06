@@ -23,6 +23,7 @@ from xnat.session import XNATSession
 import csv
 import time
 import warnings
+import xnat_cli_scripts.cli_common
 warnings.filterwarnings('ignore')
 
 

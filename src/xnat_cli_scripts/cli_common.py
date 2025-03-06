@@ -7,16 +7,16 @@ from typing import Union
 # Common functions for CLI executables
 
 def extract_auth_user(args: argparse.Namespace) -> str:
-    if (args.user is None):
+    if (args.auth is None):
         return "NoUser"
 
-    return args.user.split(":")[0]
+    return args.auth.split(":")[0]
 
 def extract_auth_password(args: argparse.Namespace) -> Union[str,None]:
-    if (args.user is None):
+    if (args.auth is None):
         return None
 
-    auth_tokens = args.user.split(":")
+    auth_tokens = args.auth.split(":")
     auth_password=None
 
     if len(auth_tokens) > 1:

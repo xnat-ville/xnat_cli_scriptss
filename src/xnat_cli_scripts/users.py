@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     ## XNAT user/login information
     parser.add_argument('-x', '--xnat',            dest='url',             help="URL to XNAT, default is https://cnda.wustl.edu")
-    parser.add_argument('-a', '--auth',            dest='user',            help="User authentication/login for access to XNAT", required=True)
+    parser.add_argument('-a', '--auth',            dest='auth',            help="User authentication/login for access to XNAT", required=True)
     parser.add_argument('-p', '--password',        dest='password',        help="Password for XNAT authentication", required=False)
     parser.add_argument('-e', '--extension_types', dest='extension_types', help="True or False for extension_types in xnat.connect")
 
