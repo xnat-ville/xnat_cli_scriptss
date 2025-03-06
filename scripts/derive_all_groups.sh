@@ -1,5 +1,17 @@
 #!/bin/bash
 
+pre_flight() {
+ for f in	\
+	test_data/active_projects.txt	\
+	test_data/inactive_projects.txt ; do
+  if [ ! -f $f ] ; then
+   echo Required file is missing: $f
+   echo Script will exit now
+   exit 1
+  fi
+ done
+}
+
 # Arguments:
 #              Base Folder
 #              Boiler Plate
@@ -29,5 +41,6 @@ url=$(get_xnat_url)
 
 BOILER_PLATE=" -a $auth_string -x $url -e False "
 
+pre_flight
 list_projects_groups "$BASE_FOLDER" "$BOILER_PLATE --csv test_data/active_projects.txt" test_data/active_project_groups.txt
 list_projects_groups "$BASE_FOLDER" "$BOILER_PLATE --csv test_data/inactive_projects.txt" test_data/inactive_project_groups.txt
