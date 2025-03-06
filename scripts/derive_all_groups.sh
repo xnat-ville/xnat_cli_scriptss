@@ -27,17 +27,21 @@ list_projects_groups() {
 # Main starts here
 # Arguments:
 #            authentication string (user or user:password)
+#            system (see common.sh)
 
-if [ $# -ne 1 ]; then
-  echo "Arguments: auth_string"
+if [ $# -ne 2 ]; then
+  echo "Arguments: auth_string system"
   exit 1
 fi
 
 auth_string="$1"
+system="$2"
 
 BASE_FOLDER=$(dirname "$0")
 source "$BASE_FOLDER/common.sh"
-url=$(get_xnat_url)
+set -e
+url=$(get_xnat_url ${system})
+set +e
 
 BOILER_PLATE=" -a $auth_string -x $url -e False "
 

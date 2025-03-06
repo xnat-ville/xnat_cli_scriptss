@@ -18,8 +18,8 @@ list_groups() {
 # Arguments:
 #            authentication string (user or user:password)
 #            target user
+#            system (found in common.sh)
 
- set -e
  if [ $# -ne 3 ] ; then
   echo "Arguments: auth_string target_user system"
   exit 1
@@ -31,7 +31,9 @@ list_groups() {
 
  BASE_FOLDER=`dirname $0`
  source $BASE_FOLDER/common.sh
+ set -e
  url=$( get_xnat_url ${system} )
+ set +e
 
  BOILER_PLATE=" -a $auth_string -x $url -e False "
 

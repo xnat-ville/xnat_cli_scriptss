@@ -15,9 +15,9 @@ get_xnat_url() {
  url=""
 
  case "$1" in
-  # Todo: Need to fix this
+  # Todo: Need to fix this (cnda-shadow07.nrg.wustl.edu)
   "EXISTING")
-   url="https://cnda-gold.nrg.wustl.edu";;
+   url="https://cnda-dev-archive1.nrg.wustl.edu";;
 
   "PRODUCTION-COPY")
    url="https://cnda-gold.nrg.wustl.edu";;
